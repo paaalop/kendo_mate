@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils";
 interface Member {
   id: string;
   name: string;
-  rank_name: string;
-  rank_level: number;
+  phone?: string | null;
+  rank_name: string | null;
+  rank_level: number | null;
   default_session_time: string;
   isAttendedToday: boolean;
   currentTechnique: string;
@@ -30,7 +31,7 @@ export function TrainingContainer({ initialMembers, dojoId }: TrainingContainerP
   const filteredMembers = useMemo(() => {
     return initialMembers.filter(m => 
       m.name.includes(search) || 
-      (m as any).phone?.endsWith(search) // phone은 fetch 시 추가 데이터 필요할 수 있음
+      m.phone?.endsWith(search)
     );
   }, [initialMembers, search]);
 

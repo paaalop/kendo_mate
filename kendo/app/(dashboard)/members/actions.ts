@@ -1,115 +1,214 @@
-"use server";
+'use server';
 
-import { createClient } from "@/utils/supabase/server";
-import { revalidatePath } from "next/cache";
+import { createClient } from '@/utils/supabase/server';
+import { revalidatePath } from 'next/cache';
+import { Member, SignupRequest, RankHistoryWithProfile } from '@/lib/types/member';
 
-async function checkIsStaff(supabase: any, userId: string) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, dojo_id")
-    .eq("user_id", userId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (!profile || (profile.role !== "owner" && profile.role !== "instructor")) {
-    return null;
-  }
-  return profile;
-}
-
-export async function approveRequest(requestId: string) {
+/**
+ * 복수 프로필 대응을 위한 헬퍼 함수
+ */
+async function getStaffProfile() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  if (!user) return { error: "인증되지 않았습니다." };
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, dojo_id, role')
+    .eq('user_id', user.id)
+    .is('deleted_at', null);
 
-  const staff = await checkIsStaff(supabase, user.id);
-  if (!staff) return { error: "권한이 없습니다." };
+  // 사범/관장 권한이 있는 프로필을 우선 선택
+  return profiles?.find(p => ['owner', 'instructor'].includes(p.role || '')) || profiles?.[0] || null;
+}
 
-  // 1. 신청 내역 조회 (도장 일치 확인)
-  const { data: request } = await supabase
-    .from("signup_requests")
-    .select("*")
-    .eq("id", requestId)
-    .single();
+/**
+ * US1: 가입 요청 처리
+ */
+export async function getPendingSignupRequests() {
+  const supabase = await createClient();
+  const profile = await getStaffProfile();
 
-  if (!request || request.dojo_id !== staff.dojo_id) {
-    return { error: "해당 신청을 찾을 수 없거나 접근 권한이 없습니다." };
+  if (!profile || !['owner', 'instructor'].includes(profile.role || '')) {
+    return [];
   }
 
-  // 2. 승인 처리 (트리거가 프로필 생성/복구 처리함)
-  const { error } = await supabase
-    .from("signup_requests")
-    .update({ status: "approved" })
-    .eq("id", requestId);
+  const { data, error } = await supabase
+    .from('signup_requests')
+    .select('*')
+    .eq('dojo_id', profile.dojo_id || '')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
 
-  if (error) return { error: "승인 처리 중 오류가 발생했습니다: " + error.message };
-
-  revalidatePath("/members");
-  revalidatePath("/", "layout");
-  return { success: true };
+  if (error) {
+    console.error('Error fetching signup requests:', error);
+    return [];
+  }
+  
+  return data as SignupRequest[];
 }
 
-export async function rejectRequest(requestId: string) {
+export async function approveSignup(requestId: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: "인증되지 않았습니다." };
-
-  const staff = await checkIsStaff(supabase, user.id);
-  if (!staff) return { error: "권한이 없습니다." };
-
   const { error } = await supabase
-    .from("signup_requests")
-    .update({ status: "rejected" })
-    .eq("id", requestId);
+    .from('signup_requests')
+    .update({ status: 'approved' })
+    .eq('id', requestId);
 
-  if (error) return { error: "거절 처리 중 오류가 발생했습니다." };
-
-  revalidatePath("/members");
+  if (error) throw error;
+  
+  revalidatePath('/(dashboard)', 'layout');
+  revalidatePath('/(dashboard)/members');
   return { success: true };
 }
 
-export async function updateMemberRole(profileId: string, newRole: string) {
+export async function rejectSignup(requestId: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: "인증되지 않았습니다." };
-
-  const staff = await checkIsStaff(supabase, user.id);
-  // 역할 변경은 관장(owner)만 가능하도록 함
-  if (!staff || staff.role !== 'owner') return { error: "관장님만 역할을 변경할 수 있습니다." };
-
   const { error } = await supabase
-    .from("profiles")
-    .update({ role: newRole })
-    .eq("id", profileId)
-    .eq("dojo_id", staff.dojo_id);
+    .from('signup_requests')
+    .update({ status: 'rejected' })
+    .eq('id', requestId);
 
-  if (error) return { error: "역할 변경 중 오류가 발생했습니다." };
-
-  revalidatePath("/members");
+  if (error) throw error;
+  
+  revalidatePath('/(dashboard)', 'layout');
   return { success: true };
 }
 
-export async function deleteMember(profileId: string) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+/**
+ * US2: 관원 검색 및 목록 조회
+ */
+export async function getMembers(params: { 
+  search?: string; 
+  page?: number; 
+  pageSize?: number; 
+}) {
+  const { search = '', page = 0, pageSize = 20 } = params;
+  const supabase = await createClient();
+  const profile = await getStaffProfile();
+
+  if (!profile) throw new Error('Unauthorized');
+
+  let query = supabase
+    .from('profiles')
+    .select('*', { count: 'exact' })
+    .eq('dojo_id', profile.dojo_id || '')
+    .is('deleted_at', null)
+    .order('name', { ascending: true })
+    .range(page * pageSize, (page + 1) * pageSize - 1);
+
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) throw error;
+  return { 
+    members: data as Member[], 
+    total: count || 0,
+    hasMore: (count || 0) > (page + 1) * pageSize
+  };
+}
+
+/**
+ * US3: 사범 권한 관리
+ */
+export async function changeMemberRole(memberId: string, newRole: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('update_member_role', {
+    target_member_id: memberId,
+    new_role: newRole
+  });
+
+  if (error) throw error;
+  revalidatePath('/(dashboard)/members');
+  return { success: true };
+}
+
+/**
+ * US4: 관원 상세 정보 조회
+ */
+export async function getMemberDetails(memberId: string) {
+  const supabase = await createClient();
   
-    if (!user) return { error: "인증되지 않았습니다." };
-  
-    const staff = await checkIsStaff(supabase, user.id);
-    if (!staff || staff.role !== 'owner') return { error: "관장님만 관원을 삭제할 수 있습니다." };
-  
-    // Soft Delete
-    const { error } = await supabase
-      .from("profiles")
-      .update({ deleted_at: new Date().toISOString() })
-      .eq("id", profileId)
-      .eq("dojo_id", staff.dojo_id);
-  
-    if (error) return { error: "삭제 중 오류가 발생했습니다." };
-  
-    revalidatePath("/members");
-    return { success: true };
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', memberId)
+    .maybeSingle(); // 상세 정보는 대상이 한 명이어야 함
+
+  if (profileError) throw profileError;
+  if (!profile) throw new Error("Member not found");
+
+  const { data: rankHistory, error: rankError } = await supabase
+    .from('rank_history')
+    .select('*, promoted_by_profile:profiles!rank_history_promoted_by_fkey(name)')
+    .eq('user_id', memberId)
+    .order('promoted_at', { ascending: false });
+
+  if (rankError) throw rankError;
+
+  return { 
+    profile: profile as Member, 
+    rankHistory: rankHistory as RankHistoryWithProfile[] 
+  };
+}
+
+export async function promoteMember(memberId: string, newRank: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('promote_member', {
+    target_member_id: memberId,
+    new_rank: newRank
+  });
+
+  if (error) throw error;
+  revalidatePath('/(dashboard)/members');
+  revalidatePath(`/(dashboard)/members/${memberId}`);
+  return { success: true };
+}
+
+export async function getAttendanceHistory(memberId: string, page: number = 0) {
+  const pageSize = 10;
+  const supabase = await createClient();
+  const { data, error, count } = await supabase
+    .from('attendance_logs')
+    .select('*', { count: 'exact' })
+    .eq('user_id', memberId)
+    .order('attended_at', { ascending: false })
+    .range(page * pageSize, (page + 1) * pageSize - 1);
+
+  if (error) throw error;
+  return { 
+    logs: data, 
+    hasMore: (count || 0) > (page + 1) * pageSize 
+  };
+}
+
+export async function updateMemberDetails(memberId: string, data: Partial<Member>) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('profiles')
+    .update(data)
+    .eq('id', memberId);
+
+  if (error) throw error;
+  revalidatePath(`/(dashboard)/members/${memberId}`);
+  revalidatePath('/(dashboard)/members');
+  return { success: true };
+}
+
+/**
+ * US5: 관원 삭제
+ */
+export async function softDeleteMember(memberId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('profiles')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', memberId);
+
+  if (error) throw error;
+  revalidatePath('/(dashboard)/members');
+  return { success: true };
 }

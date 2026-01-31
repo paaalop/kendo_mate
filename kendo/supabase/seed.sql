@@ -54,7 +54,7 @@ INSERT INTO auth.identities (
     created_at,
     updated_at
 ) VALUES (
-    gen_random_uuid(),
+    '00000000-0000-0000-0000-000000000001',
     '00000000-0000-0000-0000-000000000001',
     '{"sub":"00000000-0000-0000-0000-000000000001","email":"admin@kendo.com"}',
     'email',
@@ -62,7 +62,7 @@ INSERT INTO auth.identities (
     now(),
     now(),
     now()
-);
+) ON CONFLICT (provider, provider_id) DO NOTHING;
 
 -- Create Dojo
 INSERT INTO public.dojos (id, name, owner_id, default_fee)
@@ -70,13 +70,14 @@ VALUES ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Seoul Kendo Dojo', '00000000-00
 ON CONFLICT (id) DO NOTHING;
 
 -- Create Admin Profile
-INSERT INTO public.profiles (user_id, dojo_id, role, name, phone, rank_level, rank_name, is_adult)
-VALUES ('00000000-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'owner', 'Admin Master', '010-1234-5678', 5, '5단', true)
-ON CONFLICT (dojo_id, phone) DO NOTHING;
+INSERT INTO public.profiles (id, user_id, dojo_id, role, name, phone, rank_level, rank_name, is_adult)
+VALUES ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'owner', 'Admin Master', '010-1234-5678', 5, '5단', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Create Curriculum
-INSERT INTO public.curriculum_items (dojo_id, title, category, order_index, required_rank_level)
+INSERT INTO public.curriculum_items (id, dojo_id, title, category, order_index, required_rank_level)
 VALUES
-('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Basic Stance', 'basic', 1, 0),
-('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Forward Step', 'basic', 2, 0),
-('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Head Strike', 'technique', 1, 1);
+('c1111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Basic Stance', 'basic', 1, 0),
+('c2222222-2222-2222-2222-222222222222', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Forward Step', 'basic', 2, 0),
+('c3333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Head Strike', 'technique', 1, 1)
+ON CONFLICT (id) DO NOTHING;

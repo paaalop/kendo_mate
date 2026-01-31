@@ -15,18 +15,20 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
+  const { data: profiles } = await supabase
     .from("profiles")
     .select("*, dojos(name)")
     .eq("user_id", user.id)
-    .is("deleted_at", null)
-    .single();
+    .is("deleted_at", null);
+
+  // 관리자 권한이 있는 프로필 우선 선택
+  const profile = profiles?.find(p => ['owner', 'instructor'].includes(p.role || '')) || profiles?.[0];
 
   if (!profile || !profile.dojo_id) {
     redirect("/onboarding");
   }
 
-  const dojoName = (profile.dojos as any)?.name || "내 도장";
+  const dojoName = (profile.dojos as unknown as { name: string })?.name || "내 도장";
   const isStaff = profile.role === 'owner' || profile.role === 'instructor';
 
   return (

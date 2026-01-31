@@ -64,7 +64,7 @@
 ## Phase 7: 마무리 및 검증 (Polish & Verification)
 *목표: 데이터베이스 설정의 최종 검증을 수행합니다.*
 
-- [ ] T029 로컬 환경에서 `supabase db reset`을 실행하여 전체 마이그레이션 및 시딩 정상 동작 검증
+- [x] T029 로컬 환경에서 `supabase db reset`을 실행하여 전체 마이그레이션 및 시딩 정상 동작 검증
 
 ## 의존성 (Dependencies)
 

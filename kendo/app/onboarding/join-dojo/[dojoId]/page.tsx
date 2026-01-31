@@ -23,7 +23,7 @@ export default async function JoinDojoDetailPage({
     notFound();
   }
 
-  const ownerName = (dojo.profiles as any)[0]?.name || "관장 미지정";
+  const ownerName = (dojo.profiles as unknown as { name: string }[])[0]?.name || "관장 미지정";
 
   return (
     <div className="max-w-md mx-auto py-12 px-4">
