@@ -25,6 +25,17 @@ export default async function DashboardLayout({
   const profile = profiles?.find(p => ['owner', 'instructor'].includes(p.role || '')) || profiles?.[0];
 
   if (!profile || !profile.dojo_id) {
+    // 도장 프로필이 없는 경우 가입 신청 내역 확인
+    const { data: signupRequests } = await supabase
+      .from('signup_requests')
+      .select('id, status')
+      .eq('user_id', user.id)
+      .eq('status', 'pending');
+
+    if (signupRequests && signupRequests.length > 0) {
+      redirect("/onboarding/status");
+    }
+    
     redirect("/onboarding");
   }
 

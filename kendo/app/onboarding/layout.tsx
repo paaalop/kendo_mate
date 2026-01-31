@@ -1,11 +1,31 @@
 import React from "react";
 import { LogOut } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function OnboardingLayout({
+export default async function OnboardingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // 이미 도장에 가입되어 있는지 확인
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, dojo_id")
+    .eq("user_id", user.id)
+    .is("deleted_at", null);
+
+  if (profiles && profiles.some(p => p.dojo_id)) {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Simple Header */}
