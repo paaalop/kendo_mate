@@ -17,7 +17,7 @@ Sync Impact Report:
 
 ### I. Language & Communication (Prime Directive)
 * **모든 답변과 산출물은 반드시 '한국어(Korean)'로 작성한다.**
-* **대화:** 설명, 제안, 질문, 오류 분석 등 모든 텍스트는 한국어 경어체(해요체)를 사용한다.
+* **대화:** 앱 UI와 커밋 메시지는 한국어로 하되 기획서는 영어를 허용한다
 * **변수명/함수명:** 영문(English)을 사용하되, 의미가 명확한 `camelCase`를 준수한다. (예: `userList` (O), `gwanwonList` (X), `list` (X))
 * **커밋 메시지:** 한국어로 작성한다. (예: `feat: 출석 체크 기능 추가`)
 

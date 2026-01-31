@@ -1,11 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  // This `try/catch` block is only here for the interactive tutorial.
-  // Feel free to remove once you have Supabase connected.
+export default async function middleware(request: NextRequest) {
   try {
-    // Create an unmodified response
     let response = NextResponse.next({
       request: {
         headers: request.headers,
@@ -16,12 +13,7 @@ export async function middleware(request: NextRequest) {
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("Middleware Error: Missing Supabase Environment Variables");
-      return NextResponse.next({
-        request: {
-          headers: request.headers,
-        },
-      });
+      return NextResponse.next({ request: { headers: request.headers } });
     }
 
     const supabase = createServerClient(
@@ -29,90 +21,78 @@ export async function middleware(request: NextRequest) {
       supabaseKey,
       {
         cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
+          getAll() { return request.cookies.getAll(); },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              request.cookies.set(name, value)
-            );
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              response.cookies.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+            response = NextResponse.next({ request: { headers: request.headers } });
+            cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
           },
         },
       }
     );
 
-    // This will refresh session if expired - required for Server Components
-    // https://supabase.com/docs/guides/auth/server-side/nextjs
-    const { 
-      data: { user }, 
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    // AUTH PROTECTIONS
-    const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
-                       request.nextUrl.pathname.startsWith('/signup');
-    const isDashboardPage = request.nextUrl.pathname === '/' || 
-                             request.nextUrl.pathname.startsWith('/dashboard');
+    const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup');
     const isOnboardingPage = request.nextUrl.pathname.startsWith('/onboarding');
+    const isDashboardPage = request.nextUrl.pathname === '/' || 
+                             request.nextUrl.pathname.startsWith('/dashboard') ||
+                             request.nextUrl.pathname.startsWith('/members') ||
+                             request.nextUrl.pathname.startsWith('/training') ||
+                             request.nextUrl.pathname.startsWith('/attendance');
+    
+    const isProtectedRoute = !isAuthPage && !isOnboardingPage && !request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.includes('.');
 
-    // 1. 미인증 -> 로그인 (대시보드 또는 온보딩 접근 시)
-    if (!user && (isDashboardPage || isOnboardingPage)) {
+    // 1. 미인증 보호
+    if (!user && isProtectedRoute) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    // 2. 인증됨 -> 대시보드로 (로그인/회원가입 페이지 접근 시)
+    // 2. 인증됨 -> 대시보드로
     if (user && isAuthPage) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    // 3. 인증됨 -> 프로필 및 가입 신청 여부에 따른 리다이렉션
     if (user) {
-      const { data: profile } = await supabase
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('id, dojo_id, role')
         .eq('user_id', user.id)
-        .is('deleted_at', null)
-        .maybeSingle();
+        .is('deleted_at', null);
 
-      const isStaff = profile?.role === 'owner' || profile?.role === 'instructor';
+      // 복수 프로필 중 하나라도 사범/관장이면 스태프로 인정
+      const isStaff = profiles?.some(p => ['owner', 'instructor'].includes(p.role || '')) || false;
+      const hasAnyDojo = profiles?.some(p => p.dojo_id) || false;
+
       const isAdminPage = request.nextUrl.pathname.startsWith('/members') || 
-                          request.nextUrl.pathname.startsWith('/attendance');
+                          request.nextUrl.pathname.startsWith('/attendance') ||
+                          request.nextUrl.pathname.startsWith('/training');
 
-      // 3-1. 관리자 페이지 접근 권한 체크
+      // 3-1. 관리자 전용 페이지 접근 권한 체크
       if (isAdminPage && !isStaff) {
         return NextResponse.redirect(new URL("/", request.url));
       }
 
-      // 3-2. 프로필이 있는 경우
-      if (profile?.dojo_id) {
+      // 3-2. 도장 소속 여부에 따른 온보딩 리다이렉트
+      if (hasAnyDojo) {
         if (isOnboardingPage) {
           return NextResponse.redirect(new URL("/", request.url));
         }
-      } 
-      // 3-3. 프로필이 없는 경우
-      else {
-        // 가입 신청 여부 확인
-        const { data: signupRequest } = await supabase
+      } else {
+        // 도장도 없고 프로필도 없는 경우 가입 신청 확인
+        const { data: signupRequests } = await supabase
           .from('signup_requests')
           .select('id, status')
           .eq('user_id', user.id)
-          .eq('status', 'pending')
-          .maybeSingle();
+          .eq('status', 'pending');
 
-        // 신청 중인데 온보딩 메인이나 대시보드에 있으면 상태 페이지로
+        const signupRequest = signupRequests?.[0];
+
         if (signupRequest && (request.nextUrl.pathname === '/onboarding' || isDashboardPage)) {
           return NextResponse.redirect(new URL("/onboarding/status", request.url));
         }
         
-        // 신청도 없고 프로필도 없는데 대시보드 접근 시 온보딩으로
-        if (!signupRequest && isDashboardPage) {
+        if (!signupRequest && isDashboardPage && !isOnboardingPage) {
           return NextResponse.redirect(new URL("/onboarding", request.url));
         }
       }
@@ -120,27 +100,13 @@ export async function middleware(request: NextRequest) {
 
     return response;
   } catch (e) {
-    console.error("Middleware Unexpected Error:", e);
-    // If you are here, a Supabase client could not be created!
-    // This is likely because you have not set up environment variables.
-    // Check out http://localhost:3000 for Next.js Config instructions.
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    console.error("Middleware Error:", e);
+    return NextResponse.next({ request: { headers: request.headers } });
   }
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

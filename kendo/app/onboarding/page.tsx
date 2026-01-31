@@ -8,16 +8,16 @@ export default async function OnboardingPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, dojo_id")
-      .eq("user_id", user.id)
-      .is("deleted_at", null)
-      .maybeSingle();
+  // 이미 프로필이 있다면 홈으로 리다이렉트
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .is("deleted_at", null);
 
-    if (profile?.dojo_id) {
-      redirect("/");
-    }
+  if (profiles && profiles.length > 0) {
+    redirect("/");
+  }
   }
 
   return (

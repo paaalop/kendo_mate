@@ -1,15 +1,18 @@
 import { createClient } from "@/utils/supabase/server";
+import { SignupRequestsList } from "@/components/dashboard/signup-requests-list";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
-  const { data: profile } = await supabase
+  const { data: profiles } = await supabase
     .from("profiles")
     .select("*, dojos(name)")
-    .eq("user_id", user?.id)
-    .is("deleted_at", null)
-    .single();
+    .eq("user_id", user?.id || "")
+    .is("deleted_at", null);
+
+  // 관리자 권한(owner, instructor)이 있는 프로필을 우선 선택
+  const profile = profiles?.find(p => ['owner', 'instructor'].includes(p.role || '')) || profiles?.[0];
 
   if (!profile) return null;
 
@@ -40,7 +43,7 @@ export default async function DashboardPage() {
         user_id,
         profiles!inner(deleted_at)
       `)
-      .eq("dojo_id", dojoId)
+      .eq("dojo_id", dojoId || "")
       .is("profiles.deleted_at", null)
       .gte("attended_at", startOfDay)
       .lte("attended_at", endOfDay);
@@ -53,7 +56,7 @@ export default async function DashboardPage() {
     const { count: pendingCount } = await supabase
       .from("signup_requests")
       .select("*", { count: "exact", head: true })
-      .eq("dojo_id", dojoId)
+      .eq("dojo_id", dojoId || "")
       .eq("status", "pending");
     pendingRequestsCount = pendingCount || 0;
   } else {
@@ -89,6 +92,8 @@ export default async function DashboardPage() {
               <p className="text-3xl font-bold text-green-600 mt-2">0원</p>
             </div>
           </div>
+
+          <SignupRequestsList />
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[300px] flex flex-col items-center justify-center text-center">
             {todayAttendanceCount > 0 ? (

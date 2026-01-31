@@ -13,11 +13,13 @@ export default async function TrainingLayout({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
+  const { data: profiles } = await supabase
     .from("profiles")
     .select("role")
     .eq("user_id", user.id)
-    .single();
+    .is("deleted_at", null);
+
+  const profile = profiles?.find(p => ["owner", "instructor"].includes(p.role || "")) || profiles?.[0];
 
   if (!profile || (profile.role !== "owner" && profile.role !== "instructor")) {
     // 권한이 없는 경우 홈으로 리다이렉트하거나 접근 제한 메시지를 표시할 수 있습니다.

@@ -9,7 +9,7 @@ interface MemberCardProps {
   member: {
     id: string;
     name: string;
-    rank_name: string;
+    rank_name: string | null;
     default_session_time: string;
     isAttendedToday: boolean;
     currentTechnique: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { updateMemberRole, deleteMember } from "@/app/(dashboard)/members/actions";
+import { changeMemberRole, softDeleteMember } from "@/app/(dashboard)/members/actions";
 import { useState } from "react";
 import { User, Shield, UserMinus, Phone } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils/phone";
@@ -14,14 +14,15 @@ interface Member {
   guardian_phone?: string;
 }
 
-export function MembersList({ members, currentUserId, currentUserRole }: { members: Member[], currentUserId: string, currentUserRole: string }) {
+export function MembersList({ members, currentUserRole }: { members: Member[], currentUserId: string, currentUserRole: string }) {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const handleRoleChange = async (id: string, newRole: string) => {
     setProcessingId(id);
-    const result = await updateMemberRole(id, newRole);
-    if (result.error) {
-      alert(result.error);
+    try {
+      await changeMemberRole(id, newRole);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "오류가 발생했습니다.");
     }
     setProcessingId(null);
   };
@@ -29,9 +30,10 @@ export function MembersList({ members, currentUserId, currentUserRole }: { membe
   const handleDelete = async (id: string) => {
     if (!confirm("정말로 이 관원을 삭제(탈퇴 처리)하시겠습니까?")) return;
     setProcessingId(id);
-    const result = await deleteMember(id);
-    if (result.error) {
-      alert(result.error);
+    try {
+      await softDeleteMember(id);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "오류가 발생했습니다.");
     }
     setProcessingId(null);
   };

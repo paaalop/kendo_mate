@@ -21,14 +21,13 @@ export default function StatusPage() {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profiles } = await supabase
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
-        .is("deleted_at", null)
-        .maybeSingle();
+        .is("deleted_at", null);
 
-      if (profile) {
+      if (profiles && profiles.length > 0) {
         router.push("/");
         router.refresh();
       }

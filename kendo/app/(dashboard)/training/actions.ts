@@ -17,14 +17,41 @@ export async function fetchTrainingData() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("인증되지 않은 사용자입니다.");
 
-  const { data: profile } = await supabase
+  const { data: profiles, error: profileError } = await supabase
     .from("profiles")
-    .select("dojo_id, role")
+    .select("id, dojo_id, role")
     .eq("user_id", user.id)
-    .single();
+    .is("deleted_at", null);
 
-  if (!profile || (profile.role !== "owner" && profile.role !== "instructor")) {
-    throw new Error("접근 권한이 없습니다.");
+  if (profileError) {
+    console.error('Profile Fetch Error:', profileError);
+    throw new Error(`프로필 조회 중 오류: ${profileError.message}`);
+  }
+
+  // 관리자 권한이 있는 프로필 우선 선택
+  const profile = profiles?.find(p => ["owner", "instructor"].includes(p.role || "")) || profiles?.[0];
+
+  // 서버 로그 출력
+  console.log('--- Training Access Debug ---');
+  console.log('User ID:', user.id);
+  console.log('Total Profiles found:', profiles?.length || 0);
+  if (profile) {
+    console.log('Selected Role:', profile.role);
+    console.log('Selected Dojo ID:', profile.dojo_id);
+  }
+  console.log('-----------------------------');
+
+  if (!profile) {
+    throw new Error("도장 관리자 프로필을 찾을 수 없습니다. 도장에 먼저 가입 승인이 되었는지 확인해주세요.");
+  }
+
+  const allowedRoles = ["owner", "instructor"];
+  if (!allowedRoles.includes(profile.role || "")) {
+    throw new Error(`접근 권한이 없습니다. (현재 역할: ${profile.role || '없음'})`);
+  }
+
+  if (!profile.dojo_id) {
+    throw new Error("소속된 도장이 없습니다. 도장 관리자에게 문의하세요.");
   }
 
   const dojoId = profile.dojo_id;
@@ -36,12 +63,14 @@ export async function fetchTrainingData() {
   const startOfDay = new Date(kstNow.setUTCHours(0, 0, 0, 0) - kstOffset).toISOString();
   const endOfDay = new Date(kstNow.setUTCHours(23, 59, 59, 999) - kstOffset).toISOString();
 
-  // 1. 관원 및 관련 데이터 조회 (profiles 테이블에 deleted_at이 있을 수 있으므로 필터링)
+  // 1. 관원 및 관련 데이터 조회
+  console.log('Fetching members for Dojo:', dojoId);
   const { data: members, error: membersError } = await supabase
     .from("profiles")
     .select(`
       id,
       name,
+      phone,
       rank_name,
       rank_level,
       default_session_time,
@@ -55,7 +84,10 @@ export async function fetchTrainingData() {
     .order("default_session_time", { ascending: true })
     .order("name", { ascending: true });
 
-  if (membersError) throw membersError;
+  if (membersError) {
+    console.error('Members Fetch Error:', membersError);
+    throw new Error(`관원 목록 조회 실패: ${membersError.message}`);
+  }
 
   // 2. 해당 도장의 전체 커리큘럼 조회
   const { data: curriculum, error: curriculumError } = await supabase
@@ -64,17 +96,18 @@ export async function fetchTrainingData() {
     .eq("dojo_id", dojoId)
     .order("order_index", { ascending: true });
 
-  if (curriculumError) throw curriculumError;
+  if (curriculumError) {
+    console.error('Curriculum Fetch Error:', curriculumError);
+    throw new Error(`커리큘럼 조회 실패: ${curriculumError.message}`);
+  }
 
   // 3. 데이터 가공
-  const processedMembers = members.map((member: any) => {
-    // 오늘 출석 여부 (KST 날짜 범위 내 로그가 있는지 확인)
-    const isAttendedToday = member.attendance_logs?.some((log: any) => 
+  const processedMembers = (members || []).map((member) => {
+    const isAttendedToday = (member.attendance_logs as unknown as { attended_at: string }[])?.some((log) => 
       log.attended_at >= startOfDay && log.attended_at <= endOfDay
     );
 
-    // 진도 계산 (급수 제한 없음)
-    const completedItemIds = new Set(member.user_progress?.map((p: any) => p.item_id));
+    const completedItemIds = new Set((member.user_progress as unknown as { item_id: string }[])?.map((p) => p.item_id));
     const currentTechnique = curriculum?.find(item => !completedItemIds.has(item.id));
 
     let techniqueTitle = "커리큘럼 완료";
@@ -84,11 +117,12 @@ export async function fetchTrainingData() {
       techniqueTitle = currentTechnique.title;
     }
 
-    const unpaidMonthsCount = member.payments?.filter((p: any) => p.status === "unpaid").length || 0;
+    const unpaidMonthsCount = (member.payments as unknown as { status: string }[])?.filter((p) => p.status === "unpaid").length || 0;
 
     return {
       id: member.id,
       name: member.name,
+      phone: member.phone,
       rank_name: member.rank_name,
       rank_level: member.rank_level,
       default_session_time: member.default_session_time || "미배정",
@@ -99,40 +133,37 @@ export async function fetchTrainingData() {
     };
   });
 
+  console.log(`Successfully processed ${processedMembers.length} members.`);
   return { members: processedMembers, dojoId };
 }
 
 /**
- * 출석 토글 액션 (해제 기능 강화)
+ * 출석 토글 액션
  */
 export async function toggleAttendance(formData: { userId: string, dojoId: string }) {
   const supabase = await createClient();
-  
-  // 권한 확인: 현재 사용자가 도장 관리자인지 확인
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("인증되지 않은 사용자입니다.");
 
-  const { data: myProfile } = await supabase
+  const { data: profiles } = await supabase
     .from("profiles")
     .select("dojo_id, role")
     .eq("user_id", user.id)
-    .single();
+    .is("deleted_at", null);
 
-  if (!myProfile || (myProfile.role !== "owner" && myProfile.role !== "instructor")) {
-    throw new Error("접근 권한이 없습니다.");
+  const myProfile = profiles?.find(p => ["owner", "instructor"].includes(p.role || "")) || profiles?.[0];
+
+  if (!myProfile || !["owner", "instructor"].includes(myProfile.role || "")) {
+    throw new Error("출석 체크 권한이 없습니다.");
   }
 
-  // 대상 관원의 정보 및 도장 ID 확인 (서버 데이터 우선)
   const { data: memberProfile } = await supabase
     .from("profiles")
     .select("dojo_id")
     .eq("id", formData.userId)
     .single();
 
-  if (!memberProfile) throw new Error("관원 정보를 찾을 수 없습니다.");
-  
-  // 관리자와 관원의 도장이 일치하는지 확인 (보안 강화)
-  if (memberProfile.dojo_id !== myProfile.dojo_id) {
+  if (!memberProfile || memberProfile.dojo_id !== myProfile.dojo_id) {
     throw new Error("해당 관원에 대한 권한이 없습니다.");
   }
 
@@ -147,7 +178,6 @@ export async function toggleAttendance(formData: { userId: string, dojoId: strin
   const startOfDay = new Date(kstNow.setUTCHours(0, 0, 0, 0) - kstOffset).toISOString();
   const endOfDay = new Date(kstNow.setUTCHours(23, 59, 59, 999) - kstOffset).toISOString();
 
-  // 오늘 날짜의 출석 로그가 있는지 조회
   const { data: existingLogs } = await supabase
     .from("attendance_logs")
     .select("id")
@@ -156,24 +186,15 @@ export async function toggleAttendance(formData: { userId: string, dojoId: strin
     .lte("attended_at", endOfDay);
 
   if (existingLogs && existingLogs.length > 0) {
-    // 이미 있으면 해당 날짜의 모든 로그 삭제 (해제)
-    const idsToDelete = existingLogs.map(log => log.id);
-    await supabase
-      .from("attendance_logs")
-      .delete()
-      .in("id", idsToDelete);
+    await supabase.from("attendance_logs").delete().in("id", existingLogs.map(l => l.id));
   } else {
-    // 없으면 추가
-    await supabase
-      .from("attendance_logs")
-      .insert({
-        user_id: validated.userId,
-        dojo_id: validated.dojoId,
-        attended_at: new Date().toISOString() // 현재 시간을 UTC로 저장
-      });
+    await supabase.from("attendance_logs").insert({
+      user_id: validated.userId,
+      dojo_id: validated.dojoId,
+      attended_at: new Date().toISOString()
+    });
   }
 
-  // 대시보드 및 수련 관리 페이지 모두 갱신
   revalidatePath("/", "layout");
 }
 
@@ -208,21 +229,21 @@ export async function passTechnique(formData: { userId: string, itemId: string }
  */
 export async function sendPromotionNotification(formData: { month: string, dojoId: string }) {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("인증이 필요합니다.");
 
-  const { data: profile } = await supabase
+  const { data: profiles } = await supabase
     .from("profiles")
     .select("id, dojo_id, role")
     .eq("user_id", user.id)
-    .single();
+    .is("deleted_at", null);
 
-  if (!profile || (profile.role !== "owner" && profile.role !== "instructor")) {
-    throw new Error("접근 권한이 없습니다.");
+  const profile = profiles?.find(p => ["owner", "instructor"].includes(p.role || "")) || profiles?.[0];
+
+  if (!profile || !["owner", "instructor"].includes(profile.role || "")) {
+    throw new Error("공지 권한이 없습니다.");
   }
 
-  // 요청된 dojoId가 자신의 도장인지 확인 (보안)
   if (profile.dojo_id !== formData.dojoId) {
     throw new Error("해당 도장에 대한 권한이 없습니다.");
   }

@@ -1,12 +1,13 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { createDojoSchema, joinDojoSchema } from "@/lib/validations/onboarding";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sanitizePhoneNumber } from "@/lib/utils/phone";
 
-export async function createDojo(formData: any) {
+export async function createDojo(formData: z.infer<typeof createDojoSchema>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -24,19 +25,18 @@ export async function createDojo(formData: any) {
   const phone = sanitizePhoneNumber(rawPhone);
 
   // 1. 이미 프로필이 존재하는지 체크 (1인 1도장 정책)
-  const { data: existingProfile, error: profileCheckError } = await supabase
+  const { data: profiles, error: profileCheckError } = await supabase
     .from("profiles")
     .select("id")
     .eq("user_id", user.id)
-    .is("deleted_at", null)
-    .maybeSingle();
+    .is("deleted_at", null);
 
   if (profileCheckError) {
     console.error("Profile check error:", profileCheckError);
     return { error: "내 정보를 확인하는 중 오류가 발생했습니다." };
   }
 
-  if (existingProfile) {
+  if (profiles && profiles.length > 0) {
     return { error: "이미 소속된 도장이 있습니다." };
   }
 
@@ -103,11 +103,11 @@ export async function searchDojos(query: string) {
   return data.map(dojo => ({
     id: dojo.id,
     name: dojo.name,
-    ownerName: (dojo.profiles as any)[0]?.name || "관장 미지정"
+    ownerName: (dojo.profiles as unknown as { name: string }[])[0]?.name || "관장 미지정"
   }));
 }
 
-export async function submitSignupRequest(dojoId: string, formData: any) {
+export async function submitSignupRequest(dojoId: string, formData: z.infer<typeof joinDojoSchema>) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
   
@@ -125,31 +125,29 @@ export async function submitSignupRequest(dojoId: string, formData: any) {
     const guardianPhone = rawGuardianPhone ? sanitizePhoneNumber(rawGuardianPhone) : null;
 
     // 1. 이미 소속된 도장이 있는지 확인
-    const { data: existingProfile, error: profileCheckError } = await supabase
+    const { data: profiles, error: profileCheckError } = await supabase
       .from("profiles")
       .select("id")
       .eq("user_id", user.id)
-      .is("deleted_at", null)
-      .maybeSingle();
+      .is("deleted_at", null);
 
     if (profileCheckError) {
       console.error("Profile check error:", profileCheckError);
       return { error: "내 정보를 확인하는 중 오류가 발생했습니다." };
     }
 
-    if (existingProfile) {
+    if (profiles && profiles.length > 0) {
       return { error: "이미 소속된 도장이 있습니다." };
     }
 
     // 2. 이미 대기 중인 신청이 있는지 확인
-    const { data: existingRequest } = await supabase
+    const { data: pendingRequests } = await supabase
       .from("signup_requests")
       .select("id")
       .eq("user_id", user.id)
-      .eq("status", "pending")
-      .maybeSingle();
+      .eq("status", "pending");
 
-    if (existingRequest) {
+    if (pendingRequests && pendingRequests.length > 0) {
       return { error: "이미 처리 중인 가입 신청이 있습니다." };
     }
 
@@ -201,25 +199,26 @@ export async function deleteAccount() {
 
   if (!user) return { error: "인증되지 않았습니다." };
 
-  const { data: profile } = await supabase
+  const { data: profiles } = await supabase
     .from("profiles")
-    .select("dojo_id, role")
+    .select("id, dojo_id, role")
     .eq("user_id", user.id)
-    .is("deleted_at", null)
-    .maybeSingle();
+    .is("deleted_at", null);
+
+  const profile = profiles?.find(p => p.role === 'owner') || profiles?.[0];
 
   if (profile?.role === 'owner') {
       const { error } = await supabase
         .from("dojos")
         .delete()
-        .eq("id", profile.dojo_id);
+        .eq("id", profile.dojo_id || "");
       
       if (error) return { error: "계정 삭제 중 오류가 발생했습니다." };
   } else if (profile) {
       await supabase
         .from("profiles")
         .update({ deleted_at: new Date().toISOString() })
-        .eq("id", (profile as any).id);
+        .eq("id", profile.id);
   }
 
   // Note: auth.users deletion usually requires service_role or a custom function
