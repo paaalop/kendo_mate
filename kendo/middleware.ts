@@ -12,9 +12,21 @@ export async function middleware(request: NextRequest) {
       },
     });
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Middleware Error: Missing Supabase Environment Variables");
+      return NextResponse.next({
+        request: {
+          headers: request.headers,
+        },
+      });
+    }
+
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseKey,
       {
         cookies: {
           getAll() {
@@ -108,6 +120,7 @@ export async function middleware(request: NextRequest) {
 
     return response;
   } catch (e) {
+    console.error("Middleware Unexpected Error:", e);
     // If you are here, a Supabase client could not be created!
     // This is likely because you have not set up environment variables.
     // Check out http://localhost:3000 for Next.js Config instructions.
