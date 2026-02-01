@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, Users, ClipboardList, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, LogOut, CreditCard, Settings } from "lucide-react";
 
 export default async function DashboardLayout({
   children,
@@ -41,6 +41,7 @@ export default async function DashboardLayout({
 
   const dojoName = (profile.dojos as unknown as { name: string })?.name || "내 도장";
   const isStaff = profile.role === 'owner' || profile.role === 'instructor';
+  const isOwner = profile.role === 'owner';
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -64,6 +65,18 @@ export default async function DashboardLayout({
               <Link href="/training" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition">
                 <ClipboardList className="w-5 h-5 mr-3" />
                 <span>수련 관리</span>
+              </Link>
+            </>
+          )}
+          {isOwner && (
+            <>
+              <Link href="/payments" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition">
+                <CreditCard className="w-5 h-5 mr-3" />
+                <span>회비 관리</span>
+              </Link>
+              <Link href="/settings" className="flex items-center p-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition">
+                <Settings className="w-5 h-5 mr-3" />
+                <span>도장 설정</span>
               </Link>
             </>
           )}
@@ -106,10 +119,22 @@ export default async function DashboardLayout({
                     <Users className="w-6 h-6" />
                     <span className="text-[10px] mt-1">관원</span>
                 </Link>
-                <Link href="/training" className="flex flex-col items-center p-2 text-blue-600">
+                <Link href="/training" className="flex flex-col items-center p-2 text-gray-500">
                     <ClipboardList className="w-6 h-6" />
                     <span className="text-[10px] mt-1">수련</span>
                 </Link>
+                {isOwner && (
+                  <>
+                    <Link href="/payments" className="flex flex-col items-center p-2 text-gray-500">
+                        <CreditCard className="w-6 h-6" />
+                        <span className="text-[10px] mt-1">회비</span>
+                    </Link>
+                    <Link href="/settings" className="flex flex-col items-center p-2 text-gray-500">
+                        <Settings className="w-6 h-6" />
+                        <span className="text-[10px] mt-1">설정</span>
+                    </Link>
+                  </>
+                )}
               </>
             ) : (
               <>
