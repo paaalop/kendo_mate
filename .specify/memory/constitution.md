@@ -34,8 +34,8 @@ Sync Impact Report:
 ## Additional Constraints
 
 - **Tech Stack (Strict):**
-  - **Next.js 14+ (App Router) Only**: `Pages Router` 사용 금지.
-  - **Tailwind CSS Only**: `styled-components` 등 별도 CSS 파일 생성 금지.
+  - **Next.js 15+ (App Router) Only**: `Pages Router` 사용 금지. (React 19 & Tailwind v4 기반)
+  - **Tailwind CSS v4 Only**: `styled-components` 등 별도 CSS 파일 생성 금지.
   - **Supabase Strict**: 별도 Node.js 서버 없이 Supabase SDK/RPC/RLS로만 백엔드 로직 해결.
 - **Component Strategy**: 기본적으로 **Server Component**로 간주하며, `useState` 등 필요 시에만 `'use client'` 사용.
 - **Styling Strategy**: 반응형은 **Mobile-First** (모바일 `default` -> 데스크탑 `md:`, `lg:` 확장).

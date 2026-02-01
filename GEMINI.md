@@ -9,6 +9,8 @@ Auto-generated from all feature plans. Last updated: 2026-01-30
 - PostgreSQL (via Supabase) (003-training-management)
 - TypeScript 5.x + Next.js 16.x, React 19.x, Supabase JS, Tailwind CSS v4, Lucide React (004-member-management)
 - Supabase (PostgreSQL 15+) (004-member-management)
+- TypeScript 5.x, Next.js 16.x (App Router) + Supabase (Auth, DB, Realtime), Tailwind CSS v4, Lucide React (005-owner-admin-features)
+- PostgreSQL 15+ (Supabase) (005-owner-admin-features)
 
 - SQL (PostgreSQL 15+), TypeScript 5.x (Next.js 14+) + Supabase CLI (Latest), @supabase/supabase-js (001-setup-db-schema)
 
@@ -29,9 +31,9 @@ npm test; npm run lint
 SQL (PostgreSQL 15+), TypeScript 5.x (Next.js 14+): Follow standard conventions
 
 ## Recent Changes
+- 005-owner-admin-features: Added TypeScript 5.x, Next.js 16.x (App Router) + Supabase (Auth, DB, Realtime), Tailwind CSS v4, Lucide React
 - 004-member-management: Added TypeScript 5.x + Next.js 16.x, React 19.x, Supabase JS, Tailwind CSS v4, Lucide React
 - 003-training-management: Added TypeScript 5.x, Next.js 14+ (App Router) + Supabase SDK, Tailwind CSS, Lucide React, Radix UI
-- 002-user-onboarding: Added TypeScript 5.x (Next.js 14+) + Supabase CLI (Latest), @supabase/supabase-js, React, Tailwind CSS
 
 
 <!-- MANUAL ADDITIONS START -->

@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -119,6 +119,7 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string | null
+          description: string | null
           dojo_id: string | null
           id: string
           order_index: number
@@ -128,6 +129,7 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string | null
+          description?: string | null
           dojo_id?: string | null
           id?: string
           order_index: number
@@ -137,6 +139,7 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string | null
+          description?: string | null
           dojo_id?: string | null
           id?: string
           order_index?: number
@@ -227,33 +230,36 @@ export type Database = {
       }
       payments: {
         Row: {
-          amount: number
+          amount: number | null
           created_at: string | null
           dojo_id: string | null
           id: string
-          payment_date: string | null
+          paid_at: string | null
           status: string | null
           target_month: string
+          updated_at: string
           user_id: string | null
         }
         Insert: {
-          amount: number
+          amount?: number | null
           created_at?: string | null
           dojo_id?: string | null
           id?: string
-          payment_date?: string | null
+          paid_at?: string | null
           status?: string | null
           target_month: string
+          updated_at?: string
           user_id?: string | null
         }
         Update: {
-          amount?: number
+          amount?: number | null
           created_at?: string | null
           dojo_id?: string | null
           id?: string
-          payment_date?: string | null
+          paid_at?: string | null
           status?: string | null
           target_month?: string
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: [
@@ -435,6 +441,41 @@ export type Database = {
           },
         ]
       }
+      sessions: {
+        Row: {
+          created_at: string
+          dojo_id: string
+          end_time: string
+          id: string
+          name: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          dojo_id: string
+          end_time: string
+          id?: string
+          name: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          dojo_id?: string
+          end_time?: string
+          id?: string
+          name?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_dojo_id_fkey"
+            columns: ["dojo_id"]
+            isOneToOne: false
+            referencedRelation: "dojos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signup_requests: {
         Row: {
           created_at: string | null
@@ -523,10 +564,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_monthly_payments: {
+        Args: { target_date: string }
+        Returns: undefined
+      }
       is_dojo_member: { Args: { target_dojo_id: string }; Returns: boolean }
+      is_dojo_owner: { Args: { target_dojo_id: string }; Returns: boolean }
       is_dojo_staff: { Args: { target_dojo_id: string }; Returns: boolean }
       promote_member: {
         Args: { new_rank: string; target_member_id: string }
+        Returns: undefined
+      }
+      reorder_curriculum_item: {
+        Args: { new_index: number; target_item_id: string }
         Returns: undefined
       }
       update_member_role: {
