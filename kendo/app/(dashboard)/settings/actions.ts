@@ -69,8 +69,13 @@ export async function manageSession(action: 'create' | 'update' | 'delete', data
   if (!profile?.dojo_id) throw new Error("No Dojo found");
 
   if (action === 'create') {
+    if (!data.name || !data.start_time || !data.end_time) {
+      throw new Error("Missing required fields for session creation");
+    }
     const { error } = await supabase.from("sessions").insert({
-      ...data,
+      name: data.name,
+      start_time: data.start_time,
+      end_time: data.end_time,
       dojo_id: profile.dojo_id
     });
     if (error) throw error;
@@ -130,8 +135,13 @@ export async function manageCurriculumItem(action: 'create' | 'update' | 'delete
       .select("*", { count: 'exact', head: true })
       .eq("dojo_id", profile.dojo_id);
     
+    if (!data.title) {
+      throw new Error("Missing required fields for curriculum item creation");
+    }
+
     const { error } = await supabase.from("curriculum_items").insert({
       ...data,
+      title: data.title,
       dojo_id: profile.dojo_id,
       order_index: (count || 0) + 1
     });

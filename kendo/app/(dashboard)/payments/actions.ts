@@ -50,7 +50,7 @@ export async function getMonthlyPayments(month: string, status?: 'paid' | 'unpai
   return data.map(p => ({
     id: p.id,
     user_id: p.user_id,
-    status: p.status,
+    status: p.status || 'unpaid',
     paid_at: p.paid_at,
     amount: p.amount,
     user_name: (p.profiles as unknown as { name: string | null })?.name || 'Unknown',
