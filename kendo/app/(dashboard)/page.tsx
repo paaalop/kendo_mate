@@ -36,28 +36,32 @@ export default async function DashboardPage() {
   let pendingRequestsCount = 0;
 
   if (isStaff) {
-    // 1. 오늘 출석한 고유 관원 수 조회 (활성 관원만 포함)
-    const { data: todayAttendance } = await supabase
-      .from("attendance_logs")
-      .select(`
-        user_id,
-        profiles!inner(deleted_at)
-      `)
-      .eq("dojo_id", dojoId || "")
-      .is("profiles.deleted_at", null)
-      .gte("attended_at", startOfDay)
-      .lte("attended_at", endOfDay);
+    // 1 & 2. 오늘 출석 및 대기 중인 신청 병렬 조회
+    const [attendanceResult, pendingResult] = await Promise.all([
+      supabase
+        .from("attendance_logs")
+        .select(`
+          user_id,
+          profiles!inner(deleted_at)
+        `)
+        .eq("dojo_id", dojoId || "")
+        .is("profiles.deleted_at", null)
+        .gte("attended_at", startOfDay)
+        .lte("attended_at", endOfDay),
+      
+      supabase
+        .from("signup_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("dojo_id", dojoId || "")
+        .eq("status", "pending")
+    ]);
+
+    const { data: todayAttendance } = attendanceResult;
+    const { count: pendingCount } = pendingResult;
     
     // 중복 제거 (다른 시간에 출석했어도 1명으로 카운트)
     const uniqueAttendees = new Set(todayAttendance?.map(a => a.user_id));
     todayAttendanceCount = uniqueAttendees.size;
-
-    // 2. 대기 중인 가입 신청 수
-    const { count: pendingCount } = await supabase
-      .from("signup_requests")
-      .select("*", { count: "exact", head: true })
-      .eq("dojo_id", dojoId || "")
-      .eq("status", "pending");
     pendingRequestsCount = pendingCount || 0;
   } else {
     // 관원용: 이번 달 내 출석 횟수

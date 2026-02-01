@@ -107,7 +107,8 @@ export async function getMembers(params: {
   return { 
     members: data as Member[], 
     total: count || 0,
-    hasMore: (count || 0) > (page + 1) * pageSize
+    hasMore: (count || 0) > (page + 1) * pageSize,
+    viewerProfile: profile
   };
 }
 

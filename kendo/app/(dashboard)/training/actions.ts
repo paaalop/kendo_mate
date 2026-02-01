@@ -63,38 +63,43 @@ export async function fetchTrainingData() {
   const startOfDay = new Date(kstNow.setUTCHours(0, 0, 0, 0) - kstOffset).toISOString();
   const endOfDay = new Date(kstNow.setUTCHours(23, 59, 59, 999) - kstOffset).toISOString();
 
-  // 1. 관원 및 관련 데이터 조회
-  console.log('Fetching members for Dojo:', dojoId);
-  const { data: members, error: membersError } = await supabase
-    .from("profiles")
-    .select(`
-      id,
-      name,
-      phone,
-      rank_name,
-      rank_level,
-      default_session_time,
-      attendance_logs(id, attended_at),
-      user_progress(id, item_id),
-      payments(id, status)
-    `)
-    .eq("dojo_id", dojoId)
-    .eq("role", "member")
-    .is("deleted_at", null)
-    .order("default_session_time", { ascending: true })
-    .order("name", { ascending: true });
+  // 1 & 2. 관원 및 커리큘럼 데이터 병렬 조회
+  console.log('Fetching members and curriculum for Dojo:', dojoId);
+  
+  const [membersResult, curriculumResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(`
+        id,
+        name,
+        phone,
+        rank_name,
+        rank_level,
+        default_session_time,
+        attendance_logs(id, attended_at),
+        user_progress(id, item_id),
+        payments(id, status)
+      `)
+      .eq("dojo_id", dojoId)
+      .eq("role", "member")
+      .is("deleted_at", null)
+      .order("default_session_time", { ascending: true })
+      .order("name", { ascending: true }),
+    
+    supabase
+      .from("curriculum_items")
+      .select("*")
+      .eq("dojo_id", dojoId)
+      .order("order_index", { ascending: true })
+  ]);
+
+  const { data: members, error: membersError } = membersResult;
+  const { data: curriculum, error: curriculumError } = curriculumResult;
 
   if (membersError) {
     console.error('Members Fetch Error:', membersError);
     throw new Error(`관원 목록 조회 실패: ${membersError.message}`);
   }
-
-  // 2. 해당 도장의 전체 커리큘럼 조회
-  const { data: curriculum, error: curriculumError } = await supabase
-    .from("curriculum_items")
-    .select("*")
-    .eq("dojo_id", dojoId)
-    .order("order_index", { ascending: true });
 
   if (curriculumError) {
     console.error('Curriculum Fetch Error:', curriculumError);

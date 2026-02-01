@@ -13,17 +13,7 @@ export default async function MembersPage({ searchParams }: PageProps) {
   const query = (await searchParams).q || "";
   const initialData = await getMembers({ search: query, page: 0 });
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("user_id", user?.id || "")
-    .is("deleted_at", null);
-
-  const viewerProfile = profiles?.find(p => ['owner', 'instructor'].includes(p.role || '')) || profiles?.[0];
-
-  const isOwner = viewerProfile?.role === 'owner';
+  const isOwner = initialData.viewerProfile?.role === 'owner';
 
   return (
     <div className="space-y-6">
