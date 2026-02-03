@@ -123,8 +123,8 @@ export async function requestUnlink(profileId: string) {
     .eq('owner_id', user.id)
     .single()
 
-  if (profileError || !profile || !profile.dojo_id) {
-    return { error: 'Linked profile not found' }
+  if (profileError || !profile || !profile.dojo_id || !profile.birthdate) {
+    return { error: 'Linked profile not found or missing information' }
   }
 
   const { data: existingRequest } = await supabase
