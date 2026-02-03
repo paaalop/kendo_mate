@@ -281,10 +281,12 @@ export async function sendPromotionNotification(formData: { month: string, dojoI
 
   await supabase.from("notices").insert({
     dojo_id: validated.dojoId,
-    author_id: profile.id,
+    author_id: user.id,
     title: `[공지] ${validated.month}월 승급 심사 일정 안내`,
     content: `${validated.month}월 승급 심사가 진행될 예정입니다. 수련생 여러분은 준비에 만전을 기해 주시기 바랍니다.`,
   });
 
-  revalidatePath("/", "layout");
+  revalidatePath("/");
+  revalidatePath("/community");
+  revalidatePath("/admin/community/notices");
 }

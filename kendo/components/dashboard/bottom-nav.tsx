@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, ClipboardList, CreditCard, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, CreditCard, Settings, MessageCircle } from 'lucide-react'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -20,6 +20,7 @@ export function BottomNav({ isStaff, isOwner }: BottomNavProps) {
 
   const navItems = [
     { href: '/', label: '홈', icon: LayoutDashboard },
+    { href: '/community', label: '커뮤니티', icon: MessageCircle },
     ...(isStaff ? [
       { href: '/members', label: '관원', icon: Users },
       { href: '/training', label: '수련', icon: ClipboardList },

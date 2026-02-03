@@ -97,7 +97,7 @@ export async function createLinkRequest(prevState: { error?: string; success?: b
       child_birthdate: childBirthdate,
       request_type: 'link',
       status: 'pending'
-    } as any)
+    })
 
   if (error) {
     console.error('Link Request Error:', error)
@@ -150,7 +150,7 @@ export async function requestUnlink(profileId: string) {
       child_birthdate: profile.birthdate,
       request_type: 'unlink',
       status: 'pending'
-    } as any)
+    })
 
   if (error) {
     console.error('Unlink Request Error:', error)

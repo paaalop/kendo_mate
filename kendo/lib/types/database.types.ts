@@ -76,34 +76,66 @@ export type Database = {
           },
         ]
       }
-      comments: {
+      comment_likes: {
         Row: {
-          author_id: string | null
-          content: string
-          created_at: string | null
-          id: string
-          post_id: string | null
+          comment_id: string
+          created_at: string
+          user_id: string
         }
         Insert: {
-          author_id?: string | null
-          content: string
-          created_at?: string | null
-          id?: string
-          post_id?: string | null
+          comment_id: string
+          created_at?: string
+          user_id: string
         }
         Update: {
-          author_id?: string | null
-          content?: string
-          created_at?: string | null
-          id?: string
-          post_id?: string | null
+          comment_id?: string
+          created_at?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "comments_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
             referencedColumns: ["id"]
           },
           {
@@ -156,6 +188,33 @@ export type Database = {
           },
         ]
       }
+      dojos: {
+        Row: {
+          created_at: string | null
+          default_fee: number | null
+          id: string
+          name: string
+          owner_id: string
+          trial_ends_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_fee?: number | null
+          id?: string
+          name: string
+          owner_id: string
+          trial_ends_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_fee?: number | null
+          id?: string
+          name?: string
+          owner_id?: string
+          trial_ends_at?: string | null
+        }
+        Relationships: []
+      }
       link_requests: {
         Row: {
           child_birthdate: string
@@ -192,13 +251,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "link_requests_guardian_id_fkey"
-            columns: ["guardian_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "link_requests_target_dojo_id_fkey"
             columns: ["target_dojo_id"]
             isOneToOne: false
@@ -207,69 +259,38 @@ export type Database = {
           },
         ]
       }
-      dojos: {
-        Row: {
-          created_at: string | null
-          default_fee: number | null
-          id: string
-          name: string
-          owner_id: string
-          trial_ends_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          default_fee?: number | null
-          id?: string
-          name: string
-          owner_id: string
-          trial_ends_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          default_fee?: number | null
-          id?: string
-          name?: string
-          owner_id?: string
-          trial_ends_at?: string | null
-        }
-        Relationships: []
-      }
       notices: {
         Row: {
           author_id: string | null
           content: string
-          created_at: string | null
-          dojo_id: string | null
+          created_at: string
+          dojo_id: string
           id: string
           is_pinned: boolean | null
           title: string
+          updated_at: string
         }
         Insert: {
           author_id?: string | null
           content: string
-          created_at?: string | null
-          dojo_id?: string | null
+          created_at?: string
+          dojo_id: string
           id?: string
           is_pinned?: boolean | null
           title: string
+          updated_at?: string
         }
         Update: {
           author_id?: string | null
           content?: string
-          created_at?: string | null
-          dojo_id?: string | null
+          created_at?: string
+          dojo_id?: string
           id?: string
           is_pinned?: boolean | null
           title?: string
+          updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "notices_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "notices_dojo_id_fkey"
             columns: ["dojo_id"]
@@ -330,48 +351,102 @@ export type Database = {
           },
         ]
       }
-      posts: {
+      post_likes: {
         Row: {
-          author_id: string | null
-          category: string | null
-          content: string
-          created_at: string | null
-          dojo_id: string | null
-          id: string
-          image_url: string | null
-          title: string
-          view_count: number | null
+          created_at: string
+          post_id: string
+          user_id: string
         }
         Insert: {
-          author_id?: string | null
-          category?: string | null
-          content: string
-          created_at?: string | null
-          dojo_id?: string | null
-          id?: string
-          image_url?: string | null
-          title: string
-          view_count?: number | null
+          created_at?: string
+          post_id: string
+          user_id: string
         }
         Update: {
-          author_id?: string | null
-          category?: string | null
-          content?: string
-          created_at?: string | null
-          dojo_id?: string | null
-          id?: string
-          image_url?: string | null
-          title?: string
-          view_count?: number | null
+          created_at?: string
+          post_id?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "posts_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      post_reports: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reason: string
+          reporter_id: string
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reason: string
+          reporter_id: string
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reason?: string
+          reporter_id?: string
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reports_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          category: Database["public"]["Enums"]["post_category"]
+          content: string
+          created_at: string
+          dojo_id: string
+          id: string
+          image_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          category?: Database["public"]["Enums"]["post_category"]
+          content: string
+          created_at?: string
+          dojo_id: string
+          id?: string
+          image_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          category?: Database["public"]["Enums"]["post_category"]
+          content?: string
+          created_at?: string
+          dojo_id?: string
+          id?: string
+          image_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
           {
             foreignKeyName: "posts_dojo_id_fkey"
             columns: ["dojo_id"]
@@ -624,6 +699,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_link_request_promote: {
+        Args: { request_id: string }
+        Returns: Json
+      }
       generate_monthly_payments: {
         Args: { target_date: string }
         Returns: undefined
@@ -631,24 +710,24 @@ export type Database = {
       get_guardian_summary: {
         Args: { guardian_uuid: string }
         Returns: {
+          dojo_name: string
+          last_attendance_date: string
+          link_request_type: string
+          link_status: string
           member_id: string
           name: string
-          dojo_name: string | null
-          last_attendance_date: string | null
-          unpaid_count: number
           unpaid_amount: number
-          link_status: string | null
-          link_request_type: string | null
+          unpaid_count: number
         }[]
       }
       get_next_curriculum: {
         Args: { member_uuid: string }
         Returns: {
+          category: string
           id: string
-          title: string
-          category: string | null
           order_index: number
-          required_rank_level: number | null
+          required_rank_level: number
+          title: string
         }[]
       }
       is_dojo_member: { Args: { target_dojo_id: string }; Returns: boolean }
@@ -668,7 +747,8 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      post_category: "FREE" | "QUESTION" | "EXERCISE"
+      report_status: "PENDING" | "RESOLVED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -798,7 +878,9 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      post_category: ["FREE", "QUESTION", "EXERCISE"],
+      report_status: ["PENDING", "RESOLVED"],
+    },
   },
 } as const
-
