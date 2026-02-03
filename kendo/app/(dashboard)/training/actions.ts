@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getUserId } from "@/lib/utils/auth";
 import { 
   promotionNotificationSchema, 
   attendanceToggleSchema, 
@@ -13,14 +14,14 @@ import {
  */
 export async function fetchTrainingData() {
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증되지 않은 사용자입니다.");
+  const userId = await getUserId();
+  
+  if (!userId) throw new Error("인증되지 않은 사용자입니다.");
 
   const { data: profiles, error: profileError } = await supabase
     .from("profiles")
     .select("id, dojo_id, role")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .is("deleted_at", null);
 
   if (profileError) {
@@ -33,7 +34,7 @@ export async function fetchTrainingData() {
 
   // 서버 로그 출력
   console.log('--- Training Access Debug ---');
-  console.log('User ID:', user.id);
+  console.log('User ID:', userId);
   console.log('Total Profiles found:', profiles?.length || 0);
   if (profile) {
     console.log('Selected Role:', profile.role);
@@ -161,13 +162,13 @@ export async function fetchTrainingData() {
  */
 export async function toggleAttendance(formData: { userId: string, dojoId: string }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증되지 않은 사용자입니다.");
+  const userId = await getUserId();
+  if (!userId) throw new Error("인증되지 않은 사용자입니다.");
 
   const { data: profiles } = await supabase
     .from("profiles")
     .select("dojo_id, role")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .is("deleted_at", null);
 
   const myProfile = profiles?.find(p => ["owner", "instructor"].includes(p.role || "")) || profiles?.[0];
@@ -230,6 +231,21 @@ export async function toggleAttendance(formData: { userId: string, dojoId: strin
 export async function passTechnique(formData: { userId: string, itemId: string }) {
   const validated = techniquePassSchema.parse(formData);
   const supabase = await createClient();
+  const userId = await getUserId();
+  
+  if (!userId) throw new Error("인증되지 않았습니다.");
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("dojo_id, role")
+    .eq("user_id", userId)
+    .is("deleted_at", null);
+
+  const myProfile = profiles?.find(p => ["owner", "instructor"].includes(p.role || "")) || profiles?.[0];
+
+  if (!myProfile || !["owner", "instructor"].includes(myProfile.role || "")) {
+    throw new Error("기술 통과 처리 권한이 없습니다.");
+  }
 
   const { data: existing } = await supabase
     .from("user_progress")
@@ -255,13 +271,13 @@ export async function passTechnique(formData: { userId: string, itemId: string }
  */
 export async function sendPromotionNotification(formData: { month: string, dojoId: string }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
+  const userId = await getUserId();
+  if (!userId) throw new Error("인증이 필요합니다.");
 
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, dojo_id, role")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .is("deleted_at", null);
 
   const profile = profiles?.find(p => ["owner", "instructor"].includes(p.role || "")) || profiles?.[0];
@@ -281,7 +297,7 @@ export async function sendPromotionNotification(formData: { month: string, dojoI
 
   await supabase.from("notices").insert({
     dojo_id: validated.dojoId,
-    author_id: user.id,
+    author_id: userId,
     title: `[공지] ${validated.month}월 승급 심사 일정 안내`,
     content: `${validated.month}월 승급 심사가 진행될 예정입니다. 수련생 여러분은 준비에 만전을 기해 주시기 바랍니다.`,
   });

@@ -5,16 +5,17 @@ import { revalidatePath } from 'next/cache';
 import { createNoticeSchema, createPostSchema, createCommentSchema } from '@/lib/validations/community';
 import { z } from 'zod';
 import { NoticeWithAuthor } from '@/lib/types/community';
+import { getUserId } from '@/lib/utils/auth';
 
 async function getUserProfile() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await getUserId();
+  if (!userId) throw new Error("Unauthorized");
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .single();
 
   if (!profile) throw new Error("Profile not found");
@@ -22,14 +23,14 @@ async function getUserProfile() {
   if (!profile.role) throw new Error("Role is required");
 
   return { 
-    user, 
+    userId, 
     profile: profile as Omit<typeof profile, 'dojo_id' | 'role'> & { dojo_id: string; role: string } 
   };
 }
 
 export async function createNotice(data: z.infer<typeof createNoticeSchema>) {
   try {
-    const { profile, user } = await getUserProfile();
+    const { profile, userId } = await getUserProfile();
     const validated = createNoticeSchema.parse(data);
 
     // Verify permission (Owner/Instructor) - RLS also enforces this, but good to fail early
@@ -43,7 +44,7 @@ export async function createNotice(data: z.infer<typeof createNoticeSchema>) {
       content: validated.content,
       is_pinned: validated.isPinned,
       dojo_id: profile.dojo_id,
-      author_id: user.id,
+      author_id: userId,
     });
 
     if (error) throw error;
@@ -124,7 +125,7 @@ export async function getNotices(dojoId: string): Promise<{ success: boolean; da
 
 export async function createPost(data: z.infer<typeof createPostSchema>) {
   try {
-    const { profile, user } = await getUserProfile();
+    const { profile, userId } = await getUserProfile();
     const validated = createPostSchema.parse(data);
 
     const supabase = await createClient();
@@ -134,7 +135,7 @@ export async function createPost(data: z.infer<typeof createPostSchema>) {
       category: validated.category as "FREE" | "QUESTION" | "EXERCISE",
       image_url: validated.imageUrl || null,
       dojo_id: profile.dojo_id,
-      author_id: user.id,
+      author_id: userId,
     });
 
     if (error) throw error;
@@ -150,12 +151,12 @@ export async function createPost(data: z.infer<typeof createPostSchema>) {
 export async function updatePost(id: string, data: Partial<z.infer<typeof createPostSchema>>) {
   try {
     const supabase = await createClient();
-    const { user } = await getUserProfile(); // Check auth
+    const { userId } = await getUserProfile(); // Check auth
 
     // Verify authorship
     const { data: post } = await supabase.from('posts').select('author_id').eq('id', id).single();
     if (!post) throw new Error("Post not found");
-    if (post.author_id !== user.id) throw new Error("Unauthorized"); 
+    if (post.author_id !== userId) throw new Error("Unauthorized"); 
 
     const { error } = await supabase
       .from('posts')
@@ -184,7 +185,7 @@ export async function getPosts(dojoId: string, page: number = 1, options?: { sea
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = await getUserId();
 
     // Fetch posts
     let query = supabase
@@ -250,11 +251,11 @@ export async function getPosts(dojoId: string, page: number = 1, options?: { sea
 
     // Check my likes
     const myLikes: Set<string> = new Set();
-    if (user && data.length > 0) {
+    if (userId && data.length > 0) {
       const { data: likes, error: myLikesError } = await supabase
         .from('post_likes')
         .select('post_id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('post_id', postIds);
 
       if (myLikesError) console.error('Error fetching my likes:', myLikesError);
@@ -287,14 +288,14 @@ export async function getPosts(dojoId: string, page: number = 1, options?: { sea
 export async function createComment(data: z.infer<typeof createCommentSchema>) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const userId = await getUserId();
+    if (!userId) throw new Error("Unauthorized");
 
     const validated = createCommentSchema.parse(data);
 
     const { error } = await supabase.from('comments').insert({
       post_id: validated.postId,
-      author_id: user.id,
+      author_id: userId,
       content: validated.content,
       parent_id: validated.parentId
     });
@@ -312,13 +313,13 @@ export async function createComment(data: z.infer<typeof createCommentSchema>) {
 export async function updateComment(id: string, content: string) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const userId = await getUserId();
+    if (!userId) throw new Error("Unauthorized");
 
     // Verify ownership
     const { data: comment } = await supabase.from('comments').select('author_id, post_id').eq('id', id).single();
     if (!comment) throw new Error("Comment not found");
-    if (comment.author_id !== user.id) throw new Error("Unauthorized");
+    if (comment.author_id !== userId) throw new Error("Unauthorized");
 
     const { error } = await supabase
       .from('comments')
@@ -338,7 +339,7 @@ export async function updateComment(id: string, content: string) {
 export async function getComments(postId: string) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = await getUserId();
 
     const { data, error } = await supabase
       .from('comments')
@@ -363,11 +364,11 @@ export async function getComments(postId: string) {
 
     // Check my likes
     const myLikes: Set<string> = new Set();
-    if (user) {
+    if (userId) {
       const { data: likes } = await supabase
         .from('comment_likes')
         .select('comment_id')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .in('comment_id', data.map(c => c.id));
 
       likes?.forEach(l => myLikes.add(l.comment_id));
@@ -390,8 +391,8 @@ export async function getComments(postId: string) {
 export async function toggleLike(type: 'post' | 'comment', id: string) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const userId = await getUserId();
+    if (!userId) throw new Error("Unauthorized");
 
     const table = type === 'post' ? 'post_likes' : 'comment_likes';
     const idColumn = type === 'post' ? 'post_id' : 'comment_id';
@@ -401,25 +402,25 @@ export async function toggleLike(type: 'post' | 'comment', id: string) {
       .from(table)
       .select('*')
       .eq(idColumn, id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (existing) {
       // Unlike
       if (type === 'post') {
-        const { error } = await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', user.id);
+        const { error } = await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', userId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('comment_likes').delete().eq('comment_id', id).eq('user_id', user.id);
+        const { error } = await supabase.from('comment_likes').delete().eq('comment_id', id).eq('user_id', userId);
         if (error) throw error;
       }
     } else {
       // Like
       if (type === 'post') {
-        const { error } = await supabase.from('post_likes').insert({ post_id: id, user_id: user.id });
+        const { error } = await supabase.from('post_likes').insert({ post_id: id, user_id: userId });
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('comment_likes').insert({ comment_id: id, user_id: user.id });
+        const { error } = await supabase.from('comment_likes').insert({ comment_id: id, user_id: userId });
         if (error) throw error;
       }
     }
@@ -437,19 +438,19 @@ export async function toggleLike(type: 'post' | 'comment', id: string) {
 export async function deletePost(id: string) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const userId = await getUserId();
+    if (!userId) throw new Error("Unauthorized");
 
     // Fetch Post to check permission and cleanup storage
     const { data: post } = await supabase.from('posts').select('*').eq('id', id).single();
     if (!post) throw new Error("Post not found");
 
-    const { data: profile } = await supabase.from('profiles').select('role, dojo_id').eq('user_id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('role, dojo_id').eq('user_id', userId).single();
     if (!profile) throw new Error("Profile not found");
 
     // Check permission: Author OR (Admin AND same Dojo)
     const isAdmin = profile.role && ['owner', 'instructor'].includes(profile.role) && profile.dojo_id === post.dojo_id;
-    const isAuthor = post.author_id === user.id;
+    const isAuthor = post.author_id === userId;
 
     if (!isAdmin && !isAuthor) {
       throw new Error("Permission denied");
@@ -480,12 +481,12 @@ export async function deletePost(id: string) {
 export async function reportPost(data: { postId: string; reason: string }) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const userId = await getUserId();
+    if (!userId) throw new Error("Unauthorized");
 
     const { error } = await supabase.from('post_reports').insert({
       post_id: data.postId,
-      reporter_id: user.id,
+      reporter_id: userId,
       reason: data.reason
     });
 
@@ -501,11 +502,11 @@ export async function reportPost(data: { postId: string; reason: string }) {
 export async function getReports() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const userId = await getUserId();
+    if (!userId) throw new Error("Unauthorized");
 
     // Verify Admin
-    const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('role').eq('user_id', userId).single();
     if (!profile || !profile.role || !['owner', 'instructor'].includes(profile.role)) {
        throw new Error("Permission denied");
     }
@@ -549,13 +550,13 @@ export async function getReports() {
 export async function deleteComment(id: string) {
     try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Unauthorized");
+    const userId = await getUserId();
+    if (!userId) throw new Error("Unauthorized");
 
     const { data: comment } = await supabase.from('comments').select('*, posts(dojo_id)').eq('id', id).single();
     if (!comment) throw new Error("Comment not found");
 
-    const { data: profile } = await supabase.from('profiles').select('role, dojo_id').eq('user_id', user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('role, dojo_id').eq('user_id', userId).single();
     if (!profile) throw new Error("Profile not found");
 
     // Supabase type join inference might be tricky, checking logic manually
@@ -563,7 +564,7 @@ export async function deleteComment(id: string) {
     const postDojoId = (comment as unknown as { posts: { dojo_id: string } }).posts?.dojo_id; 
     
     const isAdmin = profile.role && ['owner', 'instructor'].includes(profile.role) && profile.dojo_id === postDojoId;
-    const isAuthor = comment.author_id === user.id;
+    const isAuthor = comment.author_id === userId;
 
     if (!isAdmin && !isAuthor) {
       throw new Error("Permission denied");

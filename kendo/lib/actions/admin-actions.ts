@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { getUserId } from '@/lib/utils/auth'
 
 export async function handleLinkRequest(
   requestId: string, 
@@ -19,11 +20,11 @@ export async function handleLinkRequest(
 
   if (reqError || !request) return { error: 'Request not found' }
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const userId = await getUserId()
   const { data: staffProfile } = await supabase
     .from('profiles')
     .select('role, dojo_id')
-    .eq('user_id', user?.id || '')
+    .eq('user_id', userId || '')
     .eq('dojo_id', request.target_dojo_id)
     .single()
 
