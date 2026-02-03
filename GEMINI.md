@@ -59,4 +59,9 @@ SQL (PostgreSQL 15+), TypeScript 5.x (Next.js 14+): Follow standard conventions
 4. **Vercel 배포 성능 최적화**:
    - 서버리스 환경의 네트워크 레이턴시를 최소화하기 위해, 순차적인 `await` 호출을 지양하고 가급적 단일 쿼리나 RPC를 활용합니다.
 
+5. **배포 안정성 및 빌드 에러 방지 (Vercel)**:
+   - **사전 빌드 검증**: 모든 코드는 푸시 전 로컬에서 `npm run build`를 실행하여 TypeScript 오류가 없는지 반드시 확인합니다.
+   - **엄격한 타입 준수**: Supabase Table Row 데이터 조작 시 `database.types.ts`의 정의를 엄격히 따르며, 필수 필드(특히 `updated_at`, `id` 등) 누락을 방지합니다.
+   - **동적 속성명 지양**: DB Insert/Update 시 TypeScript의 타입 추론을 위해 가급적 동적 속성명(`[key]: value`) 대신 명시적 속성명을 사용합니다.
+
 <!-- MANUAL ADDITIONS END -->

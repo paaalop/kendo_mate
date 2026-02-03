@@ -144,6 +144,7 @@ export function CommentList({ comments: initialComments, postId, currentUserId, 
       parent_id: parentId || null,
       author_id: currentUserId || '',
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       author: { name: '본인' }, // Placeholder
       likes_count: 0,
       is_liked: false

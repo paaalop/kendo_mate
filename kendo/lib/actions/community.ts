@@ -406,14 +406,22 @@ export async function toggleLike(type: 'post' | 'comment', id: string) {
 
     if (existing) {
       // Unlike
-      const { error } = await supabase.from(table).delete().eq(idColumn, id).eq('user_id', user.id);
-      if (error) throw error;
+      if (type === 'post') {
+        const { error } = await supabase.from('post_likes').delete().eq('post_id', id).eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('comment_likes').delete().eq('comment_id', id).eq('user_id', user.id);
+        if (error) throw error;
+      }
     } else {
       // Like
-      // Construct object carefully to match expected types
-      const insertData = { [idColumn]: id, user_id: user.id }; 
-      const { error } = await supabase.from(table).insert(insertData);
-      if (error) throw error;
+      if (type === 'post') {
+        const { error } = await supabase.from('post_likes').insert({ post_id: id, user_id: user.id });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('comment_likes').insert({ comment_id: id, user_id: user.id });
+        if (error) throw error;
+      }
     }
 
     revalidatePath('/community');
