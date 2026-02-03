@@ -3,7 +3,6 @@ import { MemberSearch } from "@/components/members/member-search";
 import { MemberList } from "@/components/members/member-list";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
 
 interface PageProps {
   searchParams: Promise<{ q?: string }>;

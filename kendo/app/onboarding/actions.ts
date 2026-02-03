@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
-import { createDojoSchema, joinDojoSchema } from "@/lib/validations/onboarding";
+import { createDojoSchema, joinDojoSchema, guardianProfileSchema } from "@/lib/validations/onboarding";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sanitizePhoneNumber } from "@/lib/utils/phone";
@@ -71,6 +71,40 @@ export async function createDojo(formData: z.infer<typeof createDojoSchema>) {
       dojo_id: dojo.id,
       role: "owner",
       name: ownerName,
+      phone,
+      is_adult: true,
+    });
+
+  if (profileError) {
+    return { error: "프로필 생성 중 오류가 발생했습니다: " + profileError.message };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/");
+}
+
+export async function createGuardianProfile(formData: z.infer<typeof guardianProfileSchema>) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "인증되지 않은 사용자입니다." };
+  }
+
+  const validatedFields = guardianProfileSchema.safeParse(formData);
+  if (!validatedFields.success) {
+    return { error: "입력값이 올바르지 않습니다." };
+  }
+
+  const { name, phone: rawPhone } = validatedFields.data;
+  const phone = sanitizePhoneNumber(rawPhone);
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .insert({
+      user_id: user.id,
+      role: "guardian",
+      name,
       phone,
       is_adult: true,
     });

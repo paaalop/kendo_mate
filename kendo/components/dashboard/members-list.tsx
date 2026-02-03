@@ -2,7 +2,7 @@
 
 import { changeMemberRole, softDeleteMember } from "@/app/(dashboard)/members/actions";
 import { useState } from "react";
-import { User, Shield, UserMinus, Phone } from "lucide-react";
+import { Shield, UserMinus, Phone } from "lucide-react";
 import { formatPhoneNumber } from "@/lib/utils/phone";
 
 interface Member {

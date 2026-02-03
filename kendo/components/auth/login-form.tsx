@@ -7,6 +7,7 @@ import * as z from "zod";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { clearActiveProfile } from "@/lib/actions/family-actions";
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
@@ -27,6 +28,9 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     setError(null);
+
+    // 1. Clear any existing active profile selection to force default on entry
+    await clearActiveProfile();
 
     const { error } = await supabase.auth.signInWithPassword({
       email: data.email,
