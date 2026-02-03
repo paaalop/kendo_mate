@@ -3,31 +3,14 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Member, SignupRequest, RankHistoryWithProfile } from '@/lib/types/member';
-
-/**
- * 복수 프로필 대응을 위한 헬퍼 함수
- */
-async function getStaffProfile() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, dojo_id, role')
-    .eq('user_id', user.id)
-    .is('deleted_at', null);
-
-  // 사범/관장 권한이 있는 프로필을 우선 선택
-  return profiles?.find(p => ['owner', 'instructor'].includes(p.role || '')) || profiles?.[0] || null;
-}
+import { getActiveStaffProfile } from '@/lib/utils/profile';
 
 /**
  * US1: 가입 요청 처리
  */
 export async function getPendingSignupRequests() {
   const supabase = await createClient();
-  const profile = await getStaffProfile();
+  const profile = await getActiveStaffProfile();
 
   if (!profile || !['owner', 'instructor'].includes(profile.role || '')) {
     return [];
@@ -85,7 +68,7 @@ export async function getMembers(params: {
 }) {
   const { search = '', page = 0, pageSize = 20 } = params;
   const supabase = await createClient();
-  const profile = await getStaffProfile();
+  const profile = await getActiveStaffProfile();
 
   if (!profile) throw new Error('Unauthorized');
 

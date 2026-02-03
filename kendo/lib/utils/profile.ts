@@ -20,16 +20,19 @@ export const getActiveProfileContext = cache(async () => {
 
   if (!user) return null;
 
-  const { data: allProfiles } = await supabase
-    .from("profiles")
-    .select("*, dojos(name)")
-    .or(`user_id.eq.${user.id},owner_id.eq.${user.id}`)
-    .is("deleted_at", null);
+  // 병렬로 프로필과 쿠키 확인 (쿠키는 이미 가져왔으므로 순차적이어도 무방하나 프로필 쿼리는 필수)
+  const [{ data: allProfiles }, cookieStore] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("*, dojos(name)")
+      .or(`user_id.eq.${user.id},owner_id.eq.${user.id}`)
+      .is("deleted_at", null),
+    cookies()
+  ]);
 
   const userProfile = allProfiles?.find(p => p.user_id === user.id);
   const isGuardian = userProfile?.role === 'guardian' || (allProfiles?.some(p => p.owner_id === user.id && p.user_id !== user.id) ?? false);
 
-  const cookieStore = await cookies();
   let activeProfileId = cookieStore.get('active_profile_id')?.value;
 
   if (!activeProfileId) {
@@ -50,3 +53,19 @@ export const getActiveProfileContext = cache(async () => {
     isGuardian,
   };
 });
+
+/**
+ * 액션 등에서 현재 스태프 권한이 있는 프로필을 빠르게 가져오기 위한 헬퍼
+ */
+export async function getActiveStaffProfile() {
+  const context = await getActiveProfileContext();
+  if (!context) return null;
+
+  const activeProfile = context.allProfiles.find(p => p.id === context.activeProfileId);
+  if (activeProfile && ['owner', 'instructor'].includes(activeProfile.role || '')) {
+    return activeProfile;
+  }
+
+  // 만약 현재 활성 프로필이 스태프가 아니더라도, 스태프 권한이 있는 다른 프로필이 있는지 확인
+  return context.allProfiles.find(p => ['owner', 'instructor'].includes(p.role || '')) || null;
+}
