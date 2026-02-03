@@ -1,10 +1,22 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 
 export const getActiveProfileContext = cache(async () => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  
+  // Optimize: Check for User ID in headers injected by middleware
+  const headersList = await headers();
+  const userIdFromHeader = headersList.get('x-user-id');
+  
+  let user: { id: string } | null = null;
+  
+  if (userIdFromHeader) {
+    user = { id: userIdFromHeader };
+  } else {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  }
 
   if (!user) return null;
 

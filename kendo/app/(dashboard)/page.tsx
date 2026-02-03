@@ -34,13 +34,8 @@ export default async function DashboardPage() {
   }
 
   // 2. Specific Profile View
-  // Fetch the specific profile to determine if it's staff or member
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*, dojos(name)")
-    .eq("id", activeProfileId || "")
-    .is("deleted_at", null)
-    .single();
+  // Find the profile from allProfiles context to avoid redundant DB call
+  const profile = context.allProfiles.find(p => p.id === activeProfileId) as any;
 
   if (!profile) {
     // If active_profile_id is invalid, redirect or show message

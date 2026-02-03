@@ -39,4 +39,22 @@ SQL (PostgreSQL 15+), TypeScript 5.x (Next.js 14+): Follow standard conventions
 
 
 <!-- MANUAL ADDITIONS START -->
+
+## 🚀 Next.js 16 & Proxy Pattern 개발 규칙 (2026 기준)
+
+1. **Proxy Pattern 사용**: 
+   - `middleware.ts` 대신 `proxy.ts`를 인증 및 라우팅의 메인 진입점으로 사용합니다.
+   - 모든 글로벌 요청 처리는 `proxy.ts` 내의 `export async function proxy(request: NextRequest)`에서 수행합니다.
+
+2. **헤더 기반 인증 전파 (Header Injection)**:
+   - `proxy.ts`에서 인증된 사용자 ID를 `x-user-id` 헤더에 주입하여 하위 서버 컴포넌트로 전달합니다.
+   - 서버 컴포넌트 및 데이터 페칭 유틸리티에서는 `headers()`를 통해 이 값을 우선 확인하여 Supabase Auth의 중복 API 호출을 방지합니다.
+
+3. **데이터 페칭 최적화 (Waterfall 방지)**:
+   - **중복 쿼리 금지**: Layout에서 이미 가져온 데이터(프로필 등)는 Page에서 다시 DB 요청을 보내지 않고 Context나 Props를 통해 재사용합니다.
+   - **병렬 처리**: 서로 의존성이 없는 데이터 요청은 반드시 `Promise.all`을 사용하여 병렬로 실행합니다.
+
+4. **Vercel 배포 성능 최적화**:
+   - 서버리스 환경의 네트워크 레이턴시를 최소화하기 위해, 순차적인 `await` 호출을 지양하고 가급적 단일 쿼리나 RPC를 활용합니다.
+
 <!-- MANUAL ADDITIONS END -->
