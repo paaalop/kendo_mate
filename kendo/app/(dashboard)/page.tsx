@@ -7,6 +7,7 @@ import { getActiveProfileContext } from "@/lib/utils/profile";
 import { redirect } from "next/navigation";
 import type { GuardianSummary } from "@/lib/types/family";
 import { Suspense } from "react";
+import { getPendingSignupRequests } from "@/app/(dashboard)/members/actions";
 
 export default async function DashboardPage() {
   const context = await getActiveProfileContext();
@@ -66,7 +67,8 @@ export default async function DashboardPage() {
   const startOfMonthISO = new Date(kstStartOfMonth.getTime() - kstOffset).toISOString();
 
   if (isStaff) {
-    const [attendanceResult, pendingResult] = await Promise.all([
+    // Optimized: Fetching list once and computing count to avoid redundant DB call
+    const [attendanceResult, requests] = await Promise.all([
       supabase
         .from("attendance_logs")
         .select(`user_id, profiles!inner(deleted_at)`)
@@ -74,15 +76,11 @@ export default async function DashboardPage() {
         .is("profiles.deleted_at", null)
         .gte("attended_at", startOfDay)
         .lte("attended_at", endOfDay),
-      supabase
-        .from("signup_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("dojo_id", dojoId || "")
-        .eq("status", "pending")
+      getPendingSignupRequests()
     ]);
 
     const todayAttendanceCount = new Set(attendanceResult.data?.map(a => a.user_id)).size;
-    const pendingRequestsCount = pendingResult.count || 0;
+    const pendingRequestsCount = requests.length;
 
     return (
       <div className="space-y-6">
@@ -107,7 +105,7 @@ export default async function DashboardPage() {
         </div>
 
         <Suspense fallback={<div className="h-48 w-full bg-gray-50 animate-pulse rounded-3xl border border-dashed border-gray-200" />}>
-          <SignupRequestsList />
+          <SignupRequestsList requests={requests} />
         </Suspense>
       </div>
     );

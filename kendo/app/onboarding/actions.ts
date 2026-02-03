@@ -6,12 +6,13 @@ import { createDojoSchema, joinDojoSchema, guardianProfileSchema } from "@/lib/v
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { sanitizePhoneNumber } from "@/lib/utils/phone";
+import { getUserId } from "@/lib/utils/auth";
 
 export async function createDojo(formData: z.infer<typeof createDojoSchema>) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await getUserId();
 
-  if (!user) {
+  if (!userId) {
     return { error: "인증되지 않은 사용자입니다." };
   }
 
@@ -28,7 +29,7 @@ export async function createDojo(formData: z.infer<typeof createDojoSchema>) {
   const { data: profiles, error: profileCheckError } = await supabase
     .from("profiles")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .is("deleted_at", null);
 
   if (profileCheckError) {
@@ -44,14 +45,14 @@ export async function createDojo(formData: z.infer<typeof createDojoSchema>) {
   await supabase
     .from("signup_requests")
     .delete()
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   // 3. 도장 생성
   const { data: dojo, error: dojoError } = await supabase
     .from("dojos")
     .insert({
       name,
-      owner_id: user.id,
+      owner_id: userId,
     })
     .select()
     .single();
@@ -67,7 +68,7 @@ export async function createDojo(formData: z.infer<typeof createDojoSchema>) {
   const { error: profileError } = await supabase
     .from("profiles")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       dojo_id: dojo.id,
       role: "owner",
       name: ownerName,
@@ -85,9 +86,9 @@ export async function createDojo(formData: z.infer<typeof createDojoSchema>) {
 
 export async function createGuardianProfile(formData: z.infer<typeof guardianProfileSchema>) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await getUserId();
 
-  if (!user) {
+  if (!userId) {
     return { error: "인증되지 않은 사용자입니다." };
   }
 
@@ -102,7 +103,7 @@ export async function createGuardianProfile(formData: z.infer<typeof guardianPro
   const { error: profileError } = await supabase
     .from("profiles")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       role: "guardian",
       name,
       phone,
@@ -143,9 +144,9 @@ export async function searchDojos(query: string) {
 
 export async function submitSignupRequest(dojoId: string, formData: z.infer<typeof joinDojoSchema>) {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = await getUserId();
   
-    if (!user) {
+    if (!userId) {
       return { error: "인증되지 않은 사용자입니다." };
     }
 
@@ -162,7 +163,7 @@ export async function submitSignupRequest(dojoId: string, formData: z.infer<type
     const { data: profiles, error: profileCheckError } = await supabase
       .from("profiles")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .is("deleted_at", null);
 
     if (profileCheckError) {
@@ -178,7 +179,7 @@ export async function submitSignupRequest(dojoId: string, formData: z.infer<type
     const { data: pendingRequests } = await supabase
       .from("signup_requests")
       .select("id")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("status", "pending");
 
     if (pendingRequests && pendingRequests.length > 0) {
@@ -190,7 +191,7 @@ export async function submitSignupRequest(dojoId: string, formData: z.infer<type
       .from("signup_requests")
       .insert({
         dojo_id: dojoId,
-        user_id: user.id,
+        user_id: userId,
         name,
         phone,
         is_adult: isAdult,
@@ -207,16 +208,16 @@ export async function submitSignupRequest(dojoId: string, formData: z.infer<type
 
 export async function cancelSignupRequest() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await getUserId();
 
-  if (!user) {
+  if (!userId) {
     return { error: "인증되지 않은 사용자입니다." };
   }
 
   const { error } = await supabase
     .from("signup_requests")
     .delete()
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("status", "pending");
 
   if (error) {
@@ -229,14 +230,14 @@ export async function cancelSignupRequest() {
 
 export async function deleteAccount() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await getUserId();
 
-  if (!user) return { error: "인증되지 않았습니다." };
+  if (!userId) return { error: "인증되지 않았습니다." };
 
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, dojo_id, role")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .is("deleted_at", null);
 
   const profile = profiles?.find(p => p.role === 'owner') || profiles?.[0];

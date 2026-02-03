@@ -1,8 +1,16 @@
 import { getPendingSignupRequests } from "@/app/(dashboard)/members/actions";
 import { SignupRequestCard } from "./signup-request-card";
+import { SignupRequest } from "@/lib/types/member";
 
-export async function SignupRequestsList() {
-  const requests = await getPendingSignupRequests();
+interface SignupRequestsListProps {
+  requests?: SignupRequest[];
+}
+
+export async function SignupRequestsList({ requests: providedRequests }: SignupRequestsListProps) {
+  // Use provided requests or fetch if not provided
+  const requests = providedRequests !== undefined 
+    ? providedRequests 
+    : await getPendingSignupRequests();
 
   if (!requests || requests.length === 0) {
     return null;
