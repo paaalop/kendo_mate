@@ -15,7 +15,7 @@ interface Profile {
   id: string
   name: string
   role?: string | null
-  is_shadow?: boolean
+  is_shadow?: boolean | null
   dojo_id?: string | null
   dojos?: { name: string } | null
 }

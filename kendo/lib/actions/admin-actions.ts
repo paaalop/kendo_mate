@@ -35,7 +35,7 @@ export async function handleLinkRequest(
     await supabase.from('link_requests').update({ status: 'rejected' }).eq('id', requestId)
   } else if (action === 'approve_promote') {
     // Use RPC to bypass RLS issues (Staff cannot see/update Shadow Profile)
-    const { data: result, error } = await supabase.rpc('approve_link_request_promote', {
+    const { data: result, error } = await supabase.rpc('approve_link_request_promote' as any, {
       request_id: requestId
     })
 

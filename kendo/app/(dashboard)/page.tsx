@@ -134,7 +134,7 @@ export default async function DashboardPage() {
       supabase
         .from("curriculum_items")
         .select("*", { count: "exact", head: true })
-        .eq("dojo_id", profile.dojo_id)
+        .eq("dojo_id", profile.dojo_id || "")
     ]);
 
     const monthlyAttendanceCount = attendanceResult.count || 0;
