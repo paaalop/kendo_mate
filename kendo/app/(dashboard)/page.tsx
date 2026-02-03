@@ -35,7 +35,7 @@ export default async function DashboardPage() {
   }
 
   // 2. Specific Profile View
-  const profile = context.allProfiles.find(p => p.id === activeProfileId) as any;
+  const profile = context.allProfiles.find(p => p.id === activeProfileId);
 
   if (!profile) {
     return (

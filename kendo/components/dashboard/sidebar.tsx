@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, ClipboardList, LogOut, CreditCard, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, ClipboardList, LogOut, CreditCard, Settings, MessageCircle } from 'lucide-react'
 import { FamilySwitcher } from './family-switcher'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -33,6 +33,7 @@ export function Sidebar({
 
   const navItems = [
     { href: '/', label: '대시보드', icon: LayoutDashboard },
+    { href: '/community', label: '커뮤니티', icon: MessageCircle },
     ...(isStaff ? [
       { href: '/members', label: '관원 관리', icon: Users },
       { href: '/admin/links', label: '연결 요청 관리', icon: ClipboardList },
