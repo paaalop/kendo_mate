@@ -112,61 +112,6 @@ export default async function DashboardPage() {
       </div>
     );
   } else {
-    const [attendanceResult, currentCurriculum, progressResult, totalResult] = await Promise.all([
-      supabase
-        .from("attendance_logs")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", profile.id)
-        .gte("attended_at", startOfMonthISO),
-      getCurrentCurriculumItem(profile.id),
-      supabase
-        .from("user_progress")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", profile.id),
-      supabase
-        .from("curriculum_items")
-        .select("*", { count: "exact", head: true })
-        .eq("dojo_id", profile.dojo_id || "")
-    ]);
-
-    const monthlyAttendanceCount = attendanceResult.count || 0;
-    const completedCount = progressResult.count || 0;
-    const totalCount = totalResult.count || 0;
-    const progressRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-
-    return (
-      <div className="space-y-6">
-        <header>
-          <h1 className="text-2xl font-bold text-gray-900">{profile.name}님의 진도</h1>
-          <p className="text-gray-600">{profile.dojos?.name || '미연결 프로필'}</p>
-        </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center">
-            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mr-4">
-              <span className="text-xl font-bold text-blue-600">{monthlyAttendanceCount}</span>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">이번 달 출석</p>
-              <p className="text-lg font-bold text-gray-900">{monthlyAttendanceCount}회 수련</p>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center">
-            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mr-4">
-              <span className="text-purple-600 text-lg">🥋</span>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">현재 승급</p>
-              <p className="text-lg font-bold text-gray-900">{profile.rank_name || '무급'}</p>
-            </div>
-          </div>
-        </div>
-
-        <ProgressCard currentItem={currentCurriculum} progressRate={progressRate} />
-      </div>
-    );
-  }
-}
     // Member View
     const [attendanceResult, currentCurriculum, progressResult, totalResult] = await Promise.all([
       supabase
