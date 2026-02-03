@@ -18,7 +18,7 @@ interface LinkRequestProps {
     child_name: string
     child_birthdate: string
     request_type: string
-    created_at: string
+    created_at: string | null
   }
 }
 
@@ -69,7 +69,7 @@ export function LinkRequestCard({ request }: LinkRequestProps) {
           </div>
         </div>
         <div className="text-[10px] text-gray-400 font-bold">
-          {new Date(request.created_at).toLocaleDateString()}
+          {request.created_at ? new Date(request.created_at).toLocaleDateString() : '-'}
         </div>
       </div>
 
