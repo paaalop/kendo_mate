@@ -59,9 +59,23 @@ export async function fetchTrainingData() {
   // 한국 시간 기준 오늘의 시작/끝 시점 계산
   const now = new Date();
   const kstOffset = 9 * 60 * 60 * 1000;
-  const kstNow = new Date(now.getTime() + kstOffset);
-  const startOfDay = new Date(kstNow.setUTCHours(0, 0, 0, 0) - kstOffset).toISOString();
-  const endOfDay = new Date(kstNow.setUTCHours(23, 59, 59, 999) - kstOffset).toISOString();
+  
+  // Create a new Date object for KST calculations
+  const kstDate = new Date(now.getTime() + kstOffset);
+  
+  // Set to midnight KST
+  const kstMidnight = new Date(kstDate);
+  kstMidnight.setUTCHours(0, 0, 0, 0);
+  
+  // Convert back to UTC ISO string for DB query
+  const startOfDay = new Date(kstMidnight.getTime() - kstOffset).toISOString();
+  
+  // Set to end of day KST
+  const kstEndOfDay = new Date(kstDate);
+  kstEndOfDay.setUTCHours(23, 59, 59, 999);
+  
+  // Convert back to UTC ISO string
+  const endOfDay = new Date(kstEndOfDay.getTime() - kstOffset).toISOString();
 
   // 1 & 2. 관원 및 커리큘럼 데이터 병렬 조회
   console.log('Fetching members and curriculum for Dojo:', dojoId);
@@ -179,9 +193,16 @@ export async function toggleAttendance(formData: { userId: string, dojoId: strin
   
   const now = new Date();
   const kstOffset = 9 * 60 * 60 * 1000;
-  const kstNow = new Date(now.getTime() + kstOffset);
-  const startOfDay = new Date(kstNow.setUTCHours(0, 0, 0, 0) - kstOffset).toISOString();
-  const endOfDay = new Date(kstNow.setUTCHours(23, 59, 59, 999) - kstOffset).toISOString();
+  
+  const kstDate = new Date(now.getTime() + kstOffset);
+  
+  const kstMidnight = new Date(kstDate);
+  kstMidnight.setUTCHours(0, 0, 0, 0);
+  const startOfDay = new Date(kstMidnight.getTime() - kstOffset).toISOString();
+  
+  const kstEndOfDay = new Date(kstDate);
+  kstEndOfDay.setUTCHours(23, 59, 59, 999);
+  const endOfDay = new Date(kstEndOfDay.getTime() - kstOffset).toISOString();
 
   const { data: existingLogs } = await supabase
     .from("attendance_logs")

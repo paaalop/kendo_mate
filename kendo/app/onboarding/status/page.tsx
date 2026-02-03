@@ -45,7 +45,7 @@ export default function StatusPage() {
           schema: "public",
           table: "profiles",
         },
-        (payload) => {
+        () => {
           router.push("/");
           router.refresh();
         }
@@ -58,7 +58,7 @@ export default function StatusPage() {
           table: "profiles",
           filter: "deleted_at=is.null",
         },
-        (payload) => {
+        () => {
             router.push("/");
             router.refresh();
         }

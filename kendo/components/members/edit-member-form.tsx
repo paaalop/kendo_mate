@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Member } from "@/lib/types/member";
 import { updateMemberDetails } from "@/app/(dashboard)/members/actions";
-import { Loader2, Save, X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import type { Member } from "@/lib/types/member";
 
 interface EditMemberFormProps {
   member: Member;

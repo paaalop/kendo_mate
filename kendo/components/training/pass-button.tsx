@@ -9,17 +9,20 @@ interface PassButtonProps {
   memberId: string;
   techniqueId?: string;
   techniqueName: string;
+  compact?: boolean;
 }
 
 export function PassButton({ 
   memberId, 
   techniqueId, 
-  techniqueName 
+  techniqueName,
+  compact
 }: PassButtonProps) {
   const [isPending, startTransition] = useTransition();
   const isCompleted = techniqueName === "커리큘럼 완료";
 
-  const handlePass = () => {
+  const handlePass = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!techniqueId || isCompleted || isPending) return;
 
     startTransition(async () => {
@@ -33,9 +36,12 @@ export function PassButton({
 
   if (isCompleted) {
     return (
-      <div className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-xl font-bold min-h-[44px]">
-        <Award className="w-5 h-5" />
-        <span>심사 대기</span>
+      <div className={cn(
+        "flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg sm:rounded-xl font-bold",
+        compact ? "min-h-[32px] text-[10px] sm:text-sm" : "min-h-[44px]"
+      )}>
+        <Award className="w-3 h-3 sm:w-5 sm:h-5" />
+        <span>{compact ? "심사" : "심사 대기"}</span>
       </div>
     );
   }
@@ -45,14 +51,15 @@ export function PassButton({
       onClick={handlePass}
       disabled={isPending || !techniqueId}
       className={cn(
-        "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold transition-all active:scale-95 min-h-[44px]",
+        "flex-1 flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-bold transition-all active:scale-95",
+        compact ? "min-h-[32px] text-[10px] sm:text-sm" : "min-h-[44px]",
         isPending 
           ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" 
           : "bg-white text-gray-700 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 shadow-sm"
       )}
     >
-      <CheckIcon className={cn("w-5 h-5", isPending && "animate-spin")} />
-      <span>{isPending ? "처리 중..." : "기술 통과"}</span>
+      <CheckIcon className={cn("w-3 h-3 sm:w-5 sm:h-5", isPending && "animate-spin")} />
+      <span>{isPending ? (compact ? "..." : "처리 중...") : (compact ? "통과" : "기술 통과")}</span>
     </button>
   );
 }

@@ -57,6 +57,20 @@ export default async function OnboardingPage() {
           </div>
           <ChevronRight className="text-gray-400" />
         </Link>
+
+        <Link
+          href="/onboarding/start-guardian"
+          className="flex items-center p-6 border-2 border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition group"
+        >
+          <div className="bg-purple-100 p-3 rounded-lg mr-4 group-hover:bg-purple-200">
+            <Users className="text-purple-600 w-6 h-6" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-semibold text-gray-900">학부모로 시작하기</h2>
+            <p className="text-sm text-gray-500">자녀의 프로필을 생성하고 도장과 연결하세요.</p>
+          </div>
+          <ChevronRight className="text-gray-400" />
+        </Link>
       </div>
     </div>
   );

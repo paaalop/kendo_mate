@@ -9,12 +9,14 @@ interface AttendanceButtonProps {
   memberId: string;
   dojoId: string;
   initialAttended: boolean;
+  compact?: boolean;
 }
 
 export function AttendanceButton({ 
   memberId, 
   dojoId, 
-  initialAttended 
+  initialAttended,
+  compact
 }: AttendanceButtonProps) {
   const [isAttended, setIsAttended] = useState(initialAttended);
   const [isPending, startTransition] = useTransition();
@@ -49,7 +51,8 @@ export function AttendanceButton({
       onClick={handleToggle}
       disabled={isPending}
       className={cn(
-        "flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-bold transition-all active:scale-95 min-h-[44px] min-w-[100px]",
+        "flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-bold transition-all active:scale-95",
+        compact ? "min-h-[32px] min-w-0 flex-1 text-[10px] sm:text-sm" : "min-h-[44px] min-w-[100px]",
         isAttended 
           ? "bg-green-100 text-green-700 border-2 border-green-500" 
           : "bg-blue-600 text-white hover:bg-blue-700 shadow-md",
@@ -58,11 +61,11 @@ export function AttendanceButton({
     >
       {isAttended ? (
         <>
-          <Check className={cn("w-5 h-5", isPending && "animate-spin")} />
-          <span>출석완료</span>
+          <Check className={cn("w-3 h-3 sm:w-5 sm:h-5", isPending && "animate-spin")} />
+          <span>{compact ? "출석" : "출석완료"}</span>
         </>
       ) : (
-        <span>{isPending ? "처리 중..." : "출석"}</span>
+        <span>{isPending ? (compact ? "..." : "처리 중...") : "출석"}</span>
       )}
     </button>
   );

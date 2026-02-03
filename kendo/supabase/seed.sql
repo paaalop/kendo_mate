@@ -79,5 +79,5 @@ INSERT INTO public.curriculum_items (id, dojo_id, title, category, order_index, 
 VALUES
 ('c1111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Basic Stance', 'basic', 1, 0),
 ('c2222222-2222-2222-2222-222222222222', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Forward Step', 'basic', 2, 0),
-('c3333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Head Strike', 'technique', 1, 1)
+('c3333333-3333-3333-3333-333333333333', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Head Strike', 'technique', 3, 1)
 ON CONFLICT (id) DO NOTHING;

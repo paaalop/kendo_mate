@@ -11,6 +11,8 @@ Auto-generated from all feature plans. Last updated: 2026-01-30
 - Supabase (PostgreSQL 15+) (004-member-management)
 - TypeScript 5.x, Next.js 16.x (App Router) + Supabase (Auth, DB, Realtime), Tailwind CSS v4, Lucide React (005-owner-admin-features)
 - PostgreSQL 15+ (Supabase) (005-owner-admin-features)
+- TypeScript 5.x, Next.js 16.1.6 (React 19) + Tailwind CSS v4, Supabase JS, Lucide React, Radix UI, React Hook Form, Zod (006-member-home-dashboard)
+- TypeScript 5.x, Next.js 16.x (App Router) + Supabase SDK, Tailwind CSS v4, Lucide React, Radix UI (006-member-home-dashboard)
 
 - SQL (PostgreSQL 15+), TypeScript 5.x (Next.js 14+) + Supabase CLI (Latest), @supabase/supabase-js (001-setup-db-schema)
 
@@ -31,9 +33,9 @@ npm test; npm run lint
 SQL (PostgreSQL 15+), TypeScript 5.x (Next.js 14+): Follow standard conventions
 
 ## Recent Changes
+- 006-member-home-dashboard: Added TypeScript 5.x, Next.js 16.x (App Router) + Supabase SDK, Tailwind CSS v4, Lucide React, Radix UI
+- 006-member-home-dashboard: Added TypeScript 5.x, Next.js 16.1.6 (React 19) + Tailwind CSS v4, Supabase JS, Lucide React, Radix UI, React Hook Form, Zod
 - 005-owner-admin-features: Added TypeScript 5.x, Next.js 16.x (App Router) + Supabase (Auth, DB, Realtime), Tailwind CSS v4, Lucide React
-- 004-member-management: Added TypeScript 5.x + Next.js 16.x, React 19.x, Supabase JS, Tailwind CSS v4, Lucide React
-- 003-training-management: Added TypeScript 5.x, Next.js 14+ (App Router) + Supabase SDK, Tailwind CSS, Lucide React, Radix UI
 
 
 <!-- MANUAL ADDITIONS START -->

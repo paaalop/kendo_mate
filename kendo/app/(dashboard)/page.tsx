@@ -1,54 +1,88 @@
 import { createClient } from "@/utils/supabase/server";
 import { SignupRequestsList } from "@/components/dashboard/signup-requests-list";
+import { GuardianSummaryView } from "@/components/dashboard/guardian-summary";
+import { ProgressCard } from "@/components/dashboard/progress-card";
+import { getCurrentCurriculumItem } from "@/lib/utils/curriculum";
+import { getActiveProfileContext } from "@/lib/utils/profile";
+import { redirect } from "next/navigation";
+import type { GuardianSummary } from "@/lib/types/family";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const context = await getActiveProfileContext();
   
-  const { data: profiles } = await supabase
+  if (!context) redirect("/login");
+
+  const { user, activeProfileId } = context;
+  const supabase = await createClient();
+
+  // 1. Guardian Summary View
+  if (activeProfileId === 'guardian_summary') {
+    const { data: summaries } = await supabase.rpc('get_guardian_summary', { 
+      guardian_uuid: user.id 
+    });
+
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-bold text-gray-900">보호자 요약</h1>
+          <p className="text-gray-600">연결된 모든 관원의 상태를 한눈에 확인하세요.</p>
+        </header>
+
+        <GuardianSummaryView summaries={(summaries as GuardianSummary[]) || []} />
+      </div>
+    );
+  }
+
+  // 2. Specific Profile View
+  // Fetch the specific profile to determine if it's staff or member
+  const { data: profile } = await supabase
     .from("profiles")
     .select("*, dojos(name)")
-    .eq("user_id", user?.id || "")
-    .is("deleted_at", null);
+    .eq("id", activeProfileId || "")
+    .is("deleted_at", null)
+    .single();
 
-  // 관리자 권한(owner, instructor)이 있는 프로필을 우선 선택
-  const profile = profiles?.find(p => ['owner', 'instructor'].includes(p.role || '')) || profiles?.[0];
-
-  if (!profile) return null;
+  if (!profile) {
+    // If active_profile_id is invalid, redirect or show message
+    return (
+      <div className="p-20 text-center text-gray-500">
+        프로필을 선택해 주세요.
+      </div>
+    );
+  }
 
   const isStaff = profile.role === 'owner' || profile.role === 'instructor';
   const dojoId = profile.dojo_id;
 
-  // 한국 시간 기준 오늘의 시작/끝 시점 계산
+  // Logic for Staff/Member (Reused from previous version with some fixes)
   const now = new Date();
   const kstOffset = 9 * 60 * 60 * 1000;
-  const kstNow = new Date(now.getTime() + kstOffset);
-  const startOfDay = new Date(kstNow.setUTCHours(0, 0, 0, 0) - kstOffset).toISOString();
-  const endOfDay = new Date(kstNow.setUTCHours(23, 59, 59, 999) - kstOffset).toISOString();
-
-  // 이번 달의 시작 시점 계산 (KST 기준)
-  const startOfMonth = new Date(kstNow.setUTCFullYear(kstNow.getUTCFullYear(), kstNow.getUTCMonth(), 1));
-  startOfMonth.setUTCHours(0, 0, 0, 0);
-  const startOfMonthISO = new Date(startOfMonth.getTime() - kstOffset).toISOString();
-
-  let todayAttendanceCount = 0;
-  let monthlyAttendanceCount = 0;
-  let pendingRequestsCount = 0;
+  
+  const kstDate = new Date(now.getTime() + kstOffset);
+  
+  const kstMidnight = new Date(kstDate);
+  kstMidnight.setUTCHours(0, 0, 0, 0);
+  const startOfDay = new Date(kstMidnight.getTime() - kstOffset).toISOString();
+  
+  const kstEndOfDay = new Date(kstDate);
+  kstEndOfDay.setUTCHours(23, 59, 59, 999);
+  const endOfDay = new Date(kstEndOfDay.getTime() - kstOffset).toISOString();
+  
+  // First day of month
+  const kstStartOfMonth = new Date(kstDate);
+  kstStartOfMonth.setUTCDate(1);
+  kstStartOfMonth.setUTCHours(0, 0, 0, 0);
+  const startOfMonthISO = new Date(kstStartOfMonth.getTime() - kstOffset).toISOString();
 
   if (isStaff) {
-    // 1 & 2. 오늘 출석 및 대기 중인 신청 병렬 조회
     const [attendanceResult, pendingResult] = await Promise.all([
       supabase
         .from("attendance_logs")
-        .select(`
-          user_id,
-          profiles!inner(deleted_at)
-        `)
+        .select(`user_id, profiles!inner(deleted_at)`)
         .eq("dojo_id", dojoId || "")
         .is("profiles.deleted_at", null)
         .gte("attended_at", startOfDay)
         .lte("attended_at", endOfDay),
-      
       supabase
         .from("signup_requests")
         .select("*", { count: "exact", head: true })
@@ -56,83 +90,88 @@ export default async function DashboardPage() {
         .eq("status", "pending")
     ]);
 
-    const { data: todayAttendance } = attendanceResult;
-    const { count: pendingCount } = pendingResult;
-    
-    // 중복 제거 (다른 시간에 출석했어도 1명으로 카운트)
-    const uniqueAttendees = new Set(todayAttendance?.map(a => a.user_id));
-    todayAttendanceCount = uniqueAttendees.size;
-    pendingRequestsCount = pendingCount || 0;
+    const todayAttendanceCount = new Set(attendanceResult.data?.map(a => a.user_id)).size;
+    const pendingRequestsCount = pendingResult.count || 0;
+
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-bold text-gray-900">{profile.name}님 (관리자)</h1>
+          <p className="text-gray-600">{profile.dojos?.name} 도장 현황입니다.</p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">오늘 출석</h3>
+            <p className="text-3xl font-bold text-blue-600 mt-2">{todayAttendanceCount}명</p>
+          </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">대기 중인 신청</h3>
+            <p className="text-3xl font-bold text-orange-600 mt-2">{pendingRequestsCount}명</p>
+          </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest">이번 달 수납</h3>
+            <p className="text-3xl font-bold text-green-600 mt-2">0원</p>
+          </div>
+        </div>
+
+        <SignupRequestsList />
+      </div>
+    );
   } else {
-    // 관원용: 이번 달 내 출석 횟수
-    const { count: monthlyCount } = await supabase
-      .from("attendance_logs")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", profile.id)
-      .gte("attended_at", startOfMonthISO);
-    monthlyAttendanceCount = monthlyCount || 0;
+    // Member View
+    const [attendanceResult, currentCurriculum, progressResult, totalResult] = await Promise.all([
+      supabase
+        .from("attendance_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", profile.id)
+        .gte("attended_at", startOfMonthISO),
+      getCurrentCurriculumItem(profile.id),
+      supabase
+        .from("user_progress")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", profile.id),
+      supabase
+        .from("curriculum_items")
+        .select("*", { count: "exact", head: true })
+        .eq("dojo_id", profile.dojo_id)
+    ]);
+
+    const monthlyAttendanceCount = attendanceResult.count || 0;
+    const completedCount = progressResult.count || 0;
+    const totalCount = totalResult.count || 0;
+    const progressRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+    return (
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-bold text-gray-900">{profile.name}님의 진도</h1>
+          <p className="text-gray-600">{profile.dojos?.name || '미연결 프로필'}</p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center">
+            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mr-4">
+              <span className="text-xl font-bold text-blue-600">{monthlyAttendanceCount}</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">이번 달 출석</p>
+              <p className="text-lg font-bold text-gray-900">{monthlyAttendanceCount}회 수련</p>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center">
+            <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mr-4">
+              <span className="text-purple-600 text-lg">🥋</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">현재 승급</p>
+              <p className="text-lg font-bold text-gray-900">{profile.rank_name || '무급'}</p>
+            </div>
+          </div>
+        </div>
+
+        <ProgressCard currentItem={currentCurriculum} progressRate={progressRate} />
+      </div>
+    );
   }
-
-  return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold text-gray-900">환영합니다, {profile?.name}님!</h1>
-        <p className="text-gray-600">{profile?.dojos?.name} {isStaff ? '관리자 대시보드' : '수련 대시보드'}입니다.</p>
-      </header>
-
-      {isStaff ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-medium text-gray-500">오늘 출석</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{todayAttendanceCount}명</p>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-medium text-gray-500">대기 중인 신청</h3>
-              <p className="text-3xl font-bold text-orange-600 mt-2">{pendingRequestsCount}명</p>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-medium text-gray-500">이번 달 수납</h3>
-              <p className="text-3xl font-bold text-green-600 mt-2">0원</p>
-            </div>
-          </div>
-
-          <SignupRequestsList />
-
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 min-h-[300px] flex flex-col items-center justify-center text-center">
-            {todayAttendanceCount > 0 ? (
-                <div className="w-full text-left">
-                    <h3 className="font-semibold text-gray-900 mb-4">최근 활동</h3>
-                    <p className="text-sm text-gray-600">오늘 {todayAttendanceCount}명의 관원이 수련을 마쳤습니다.</p>
-                </div>
-            ) : (
-                <>
-                    <div className="bg-gray-50 p-4 rounded-full mb-4">
-                        <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                    </div>
-                    <p className="text-gray-500 font-medium">아직 활동 내역이 없습니다.</p>
-                    <p className="text-sm text-gray-400 mt-1">수련 관리 페이지에서 출석을 체크해보세요.</p>
-                </>
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-medium text-gray-500">이번 달 출석</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2">{monthlyAttendanceCount}회</p>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-sm font-medium text-gray-500">현재 승급</h3>
-              <p className="text-3xl font-bold text-purple-600 mt-2">{profile?.rank_name || '무급'}</p>
-            </div>
-          </div>
-          {/* ... 진도 현황 (생략) ... */}
-        </>
-      )}
-    </div>
-  );
 }

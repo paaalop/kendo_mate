@@ -156,6 +156,57 @@ export type Database = {
           },
         ]
       }
+      link_requests: {
+        Row: {
+          child_birthdate: string
+          child_name: string
+          created_at: string | null
+          guardian_id: string
+          id: string
+          request_type: string
+          status: string
+          target_dojo_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          child_birthdate: string
+          child_name: string
+          created_at?: string | null
+          guardian_id: string
+          id?: string
+          request_type?: string
+          status?: string
+          target_dojo_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          child_birthdate?: string
+          child_name?: string
+          created_at?: string | null
+          guardian_id?: string
+          id?: string
+          request_type?: string
+          status?: string
+          target_dojo_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "link_requests_guardian_id_fkey"
+            columns: ["guardian_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "link_requests_target_dojo_id_fkey"
+            columns: ["target_dojo_id"]
+            isOneToOne: false
+            referencedRelation: "dojos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dojos: {
         Row: {
           created_at: string | null
@@ -332,6 +383,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birthdate: string | null
           created_at: string | null
           default_session_time: string | null
           deleted_at: string | null
@@ -340,7 +392,9 @@ export type Database = {
           guardian_phone: string | null
           id: string
           is_adult: boolean | null
+          is_shadow: boolean | null
           name: string
+          owner_id: string | null
           phone: string | null
           rank_level: number | null
           rank_name: string | null
@@ -348,6 +402,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          birthdate?: string | null
           created_at?: string | null
           default_session_time?: string | null
           deleted_at?: string | null
@@ -356,7 +411,9 @@ export type Database = {
           guardian_phone?: string | null
           id?: string
           is_adult?: boolean | null
+          is_shadow?: boolean | null
           name: string
+          owner_id?: string | null
           phone?: string | null
           rank_level?: number | null
           rank_name?: string | null
@@ -364,6 +421,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          birthdate?: string | null
           created_at?: string | null
           default_session_time?: string | null
           deleted_at?: string | null
@@ -372,7 +430,9 @@ export type Database = {
           guardian_phone?: string | null
           id?: string
           is_adult?: boolean | null
+          is_shadow?: boolean | null
           name?: string
+          owner_id?: string | null
           phone?: string | null
           rank_level?: number | null
           rank_name?: string | null
@@ -567,6 +627,29 @@ export type Database = {
       generate_monthly_payments: {
         Args: { target_date: string }
         Returns: undefined
+      }
+      get_guardian_summary: {
+        Args: { guardian_uuid: string }
+        Returns: {
+          member_id: string
+          name: string
+          dojo_name: string | null
+          last_attendance_date: string | null
+          unpaid_count: number
+          unpaid_amount: number
+          link_status: string | null
+          link_request_type: string | null
+        }[]
+      }
+      get_next_curriculum: {
+        Args: { member_uuid: string }
+        Returns: {
+          id: string
+          title: string
+          category: string | null
+          order_index: number
+          required_rank_level: number | null
+        }[]
       }
       is_dojo_member: { Args: { target_dojo_id: string }; Returns: boolean }
       is_dojo_owner: { Args: { target_dojo_id: string }; Returns: boolean }

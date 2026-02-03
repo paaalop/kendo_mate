@@ -57,3 +57,11 @@ export const joinDojoSchema = z.object({
   message: "미성년자인 경우 보호자 연락처가 필수입니다.",
   path: ["guardianPhone"],
 });
+
+/**
+ * 학부모 프로필 생성 스키마
+ */
+export const guardianProfileSchema = z.object({
+  name: z.string().min(2, "이름은 2자 이상이어야 합니다."),
+  phone: z.string().regex(/^010\d{8}$/, "올바른 휴대폰 번호 형식이 아닙니다 (010XXXXXXXX)."),
+});

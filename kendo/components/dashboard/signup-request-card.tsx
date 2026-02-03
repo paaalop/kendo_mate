@@ -4,7 +4,6 @@ import { useState } from "react";
 import { approveSignup, rejectSignup } from "@/app/(dashboard)/members/actions";
 import { SignupRequest } from "@/lib/types/member";
 import { Check, X, Phone, User } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface SignupRequestCardProps {
   request: SignupRequest;
@@ -19,6 +18,7 @@ export function SignupRequestCard({ request }: SignupRequestCardProps) {
       await approveSignup(request.id);
       // Success is handled by revalidation and state update
     } catch (error) {
+      console.error("Approve error:", error);
       alert("승인 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
@@ -31,6 +31,7 @@ export function SignupRequestCard({ request }: SignupRequestCardProps) {
     try {
       await rejectSignup(request.id);
     } catch (error) {
+      console.error("Reject error:", error);
       alert("거절 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
