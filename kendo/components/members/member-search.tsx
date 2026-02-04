@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useDebounce } from "@/lib/utils"; // Wait, does useDebounce exist?
 
 export function MemberSearch() {
   const searchParams = useSearchParams();

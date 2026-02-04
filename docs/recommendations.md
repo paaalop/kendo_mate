@@ -145,3 +145,35 @@
     *   작성자 본인: 자신의 글/댓글 삭제 가능.
     *   관리자(관장/사범): 모든 글/댓글 삭제 가능 (부적절한 콘텐츠 관리).
 ```
+
+## 8. 관원 일괄 등록 및 부모 연동 (Excel Upload & Parent Linking)
+
+**목표:** 엑셀 업로드를 통한 관원 데이터 일괄 생성(Pre-create)과 부모 가입 시 전화번호 기반 자동 연동(Post-link) 구현.
+
+**Prompt:**
+```markdown
+이전의 '가상 프로필(Shadow Profile)' 방식을 폐기하고, "선(先) 생성, 후(後) 연동" 모델을 기반으로 관원 관리 및 부모 연결 기능을 구현하기 위한 상세 명세를 작성해 주세요.
+
+**핵심 철학:**
+1.  **Single Source of Truth:** 데이터의 원천은 도장(Admin)이 생성한 `profiles` 레코드입니다. 부모는 데이터를 생성하지 않고, 이미 존재하는 데이터에 대한 권한(Link)만 가져갑니다.
+2.  **No Merge Logic:** 복잡한 데이터 병합(Merge) 로직을 제거하고, 단순 `UPDATE`(권한 부여) 만으로 연결을 처리합니다.
+
+**상세 요구사항:**
+1.  **관원 일괄 등록 (Excel Upload):**
+    *   **기능:** 관리자(Owner)가 관원 명부 엑셀 파일(이름, 부모 전화번호 필수)을 업로드.
+    *   **처리:** `profiles` 테이블에 관원 데이터를 일괄 INSERT. 이때 `guardian_id`는 `NULL`로 설정.
+    *   **제약:** 부모가 아직 가입하지 않았더라도 관원 데이터는 정상적으로 생성되고 관리(출석 등)되어야 함.
+
+2.  **부모-자녀 자동 매칭 (Auto-Discovery):**
+    *   **Trigger:** 부모 계정 가입 또는 로그인 직후(대시보드 진입 시).
+    *   **Logic:** `profiles.guardian_phone`이 부모의 인증된 전화번호와 일치하고, `guardian_id`가 `NULL`인 레코드를 조회 (`find_my_children_by_phone` RPC 활용).
+    *   **UX:** "회원님의 자녀로 추정되는 [홍길동] 학생이 있습니다. 연결하시겠습니까?" 팝업 -> [연결] 클릭 시 `guardian_id` 업데이트.
+
+3.  **데이터베이스 스키마 조정:**
+    *   `profiles` 테이블에서 `is_shadow` 컬럼 제거 (또는 Deprecated).
+    *   `guardian_id` (UUID, Nullable, FK to auth.users): 연결된 부모 ID.
+    *   `guardian_phone` (Text): 매칭을 위한 식별자.
+
+4.  **수동 연결 요청 (Fallback):**
+    *   전화번호가 불일치하여 자동 매칭 실패 시, 부모가 이름/도장으로 검색하여 연결 요청(`link_requests`)을 보내는 흐름 포함.
+```

@@ -61,29 +61,29 @@ function CommentItem({ comment, replies, postId, currentUserId, isOwnerOrInstruc
   const canDelete = isAuthor || isOwnerOrInstructor;
 
   return (
-    <div className="py-4 border-b last:border-0 group">
+    <div className="py-5 border-b border-gray-50 last:border-0 group">
       <div className="flex justify-between items-start mb-2">
-        <div className="flex gap-2">
-          <span className="font-semibold text-sm">{comment.author?.name || '익명'}</span>
-          <span className="text-xs text-gray-500 self-center">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-sm text-gray-900">{comment.author?.name || '익명'}</span>
+          <span className="text-[11px] text-gray-400">
             {comment.id.startsWith('temp-') ? '방금 전' : formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: ko })}
           </span>
         </div>
         {canDelete && !comment.id.startsWith('temp-') && (
-           <button onClick={handleDelete} className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Trash2 className="w-3 h-3" />
+           <button onClick={handleDelete} className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all">
+              <Trash2 className="w-3.5 h-3.5" />
            </button>
         )}
       </div>
-      <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">{comment.content}</p>
+      <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap leading-relaxed">{comment.content}</p>
       
-      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+      <div className="flex items-center gap-4 text-xs font-medium text-gray-400 mb-2">
         <button 
           onClick={handleLike} 
           disabled={comment.id.startsWith('temp-')}
-          className={`flex items-center gap-1 hover:text-red-500 ${isLiked ? 'text-red-500' : ''} disabled:opacity-50`}
+          className={`flex items-center gap-1.5 transition-colors hover:text-red-500 ${isLiked ? 'text-red-500' : ''} disabled:opacity-50`}
         >
-          <Heart className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
+          <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
           <span>{likesCount}</span>
         </button>
         {/* Reply button only for top-level comments */}
@@ -91,27 +91,27 @@ function CommentItem({ comment, replies, postId, currentUserId, isOwnerOrInstruc
            <button 
              onClick={() => setIsReplying(!isReplying)} 
              disabled={comment.id.startsWith('temp-')}
-             className="flex items-center gap-1 hover:text-black disabled:opacity-50"
+             className={`flex items-center gap-1.5 transition-colors hover:text-blue-600 ${isReplying ? 'text-blue-600' : ''} disabled:opacity-50`}
            >
-             <Reply className="w-3 h-3" />
+             <Reply className="w-3.5 h-3.5" />
              <span>답글</span>
            </button>
         )}
       </div>
 
       {isReplying && (
-        <div className="pl-4 mt-2 mb-2 border-l-2 border-gray-100">
+        <div className="mt-3 mb-2 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
           <CommentForm 
              postId={postId} 
              parentId={comment.id} 
              onSuccess={() => setIsReplying(false)} 
-             placeholder="답글을 입력하세요..." 
+             placeholder="답글을 남겨보세요..." 
           />
         </div>
       )}
 
       {replies.length > 0 && (
-        <div className="pl-4 mt-2 space-y-4 border-l-2 border-gray-100">
+        <div className="mt-4 space-y-2 border-l-2 border-gray-50 pl-4">
            {replies.map(reply => (
               <CommentItem 
                 key={reply.id} 
@@ -127,6 +127,7 @@ function CommentItem({ comment, replies, postId, currentUserId, isOwnerOrInstruc
     </div>
   );
 }
+
 
 export function CommentList({ comments: initialComments, postId, currentUserId, isOwnerOrInstructor }: CommentListProps) {
   const [_, startTransition] = useTransition();

@@ -16,18 +16,21 @@ Sync Impact Report:
 ## Core Principles
 
 ### I. Language & Communication (Prime Directive)
+
 * **모든 답변과 산출물은 반드시 '한국어(Korean)'로 작성한다.**
 * **대화:** 앱 UI와 커밋 메시지는 한국어로 하되 기획서는 영어를 허용한다
 * **변수명/함수명:** 영문(English)을 사용하되, 의미가 명확한 `camelCase`를 준수한다. (예: `userList` (O), `gwanwonList` (X), `list` (X))
 * **커밋 메시지:** 한국어로 작성한다. (예: `feat: 출석 체크 기능 추가`)
 
 ### II. MVP Mindset (Development Philosophy)
+
 * **YAGNI (You Aren't Gonna Need It) 원칙 준수:** PRD에 명시되지 않은 기능(화려한 애니메이션, 복잡한 결제 등)은 절대 먼저 제안하거나 구현하지 않는다.
 * **추상화 금지:** "나중에 필요할 수 있으니 추상화하자"는 생각은 버리고, 지금 당장 작동하는 가장 직관적인 코드를 작성한다.
 * **완벽보다 속도 (Speed over Perfection):** 복잡한 디자인 패턴보다 읽기 쉽고 수정하기 쉬운 코드를 선호한다.
 * **에러 처리:** 치명적인 오류(앱 크래시)만 방지하고, 사용자에게는 `alert`나 `toast`로 간단히 처리한다.
 
 ### III. Context Awareness (Domain Understanding)
+
 * **Target Audience:** IT에 익숙하지 않은 **중장년층(관장님)**과 **학부모**가 주 사용자임을 인지한다.
 * **UI/UX Standard:** 글씨는 큼직해야 하며, 터치 영역(Button)은 충분히 넓어야 한다 (최소 44px).
 
@@ -49,5 +52,13 @@ Sync Impact Report:
 - This constitution supersedes all other project practices and documentation.
 - All technical specifications and plans must be validated against these principles.
 - Amendments require a version bump and an update to the Sync Impact Report.
+
+
+**[Mandatory DB Rule]**
+
+1. 모든 데이터베이스 스키마 변경은 반드시 `supabase/migrations` 폴더에 새로운 `.sql` 파일을 생성하는 것으로 시작한다.
+2. **절대** MCP 도구를 사용해 DB에 직접 `ALTER`, `CREATE`, `DROP` 쿼리를 실행하지 마라.
+3. 마이그레이션 파일명은 `YYYYMMDDHHMMSS_설명.sql` 형식을 준수한다.
+4. 파일 생성 후 반드시 `npx supabase db reset`을 제안하여 로컬 환경과 동기화한다
 
 **Version**: 2.0.0 | **Ratified**: 2026-01-30 | **Last Amended**: 2026-01-30

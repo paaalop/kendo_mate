@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { FamilySwitcher } from "@/components/dashboard/family-switcher";
+import { ManagementSubNav } from "@/components/dashboard/management-sub-nav";
 import { getActiveProfileContext } from "@/lib/utils/profile";
 
 interface ProfileWithDojo {
@@ -41,9 +42,10 @@ export default async function DashboardLayout({
      redirect("/onboarding");
   }
 
-  const activeProfile = allProfiles?.find(p => p.id === activeProfileId) as ProfileWithDojo | undefined;
+  const activeProfile = allProfiles?.find(p => p.id === activeProfileId) as any;
   const isStaff = activeProfile?.role === 'owner' || activeProfile?.role === 'instructor';
   const isOwner = activeProfile?.role === 'owner';
+  const isAdult = activeProfile?.is_adult || false;
   
   const dojoName = activeProfile?.dojos?.name || "내 도장";
 
@@ -57,6 +59,7 @@ export default async function DashboardLayout({
         activeProfileId={activeProfileId}
         allProfiles={allProfiles || []}
         isGuardian={isGuardian}
+        isAdult={isAdult}
       />
 
       {/* Main Content */}
@@ -68,15 +71,20 @@ export default async function DashboardLayout({
             isOwner={isOwner} 
             dojoName={dojoName} 
             activeProfileId={activeProfileId} 
+            isAdult={isAdult}
+            isGuardian={isGuardian}
           />
           <div className="flex-1">
             <FamilySwitcher 
               profiles={allProfiles || []} 
               activeProfileId={activeProfileId || ''} 
               isGuardian={isGuardian} 
+              isAdult={isAdult}
             />
           </div>
         </header>
+        
+        <ManagementSubNav />
         
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           {children}

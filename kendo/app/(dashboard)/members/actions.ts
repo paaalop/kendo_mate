@@ -72,25 +72,21 @@ export async function getMembers(params: {
 
   if (!profile) throw new Error('Unauthorized');
 
-  let query = supabase
-    .from('profiles')
-    .select('*', { count: 'exact' })
-    .eq('dojo_id', profile.dojo_id || '')
-    .is('deleted_at', null)
-    .order('name', { ascending: true })
-    .range(page * pageSize, (page + 1) * pageSize - 1);
-
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
-  }
-
-  const { data, error, count } = await query;
+  const { data, error } = await supabase.rpc('get_members_v2', {
+    p_dojo_id: profile.dojo_id,
+    p_search: search,
+    p_page: page,
+    p_page_size: pageSize
+  });
 
   if (error) throw error;
+
+  const total = data && data.length > 0 ? data[0].total_count : 0;
+  
   return { 
     members: data as Member[], 
-    total: count || 0,
-    hasMore: (count || 0) > (page + 1) * pageSize,
+    total: total || 0,
+    hasMore: (total || 0) > (page + 1) * pageSize,
     viewerProfile: profile
   };
 }
