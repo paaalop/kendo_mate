@@ -72,11 +72,11 @@ export async function getMembers(params: {
 
   if (!profile || !profile.dojo_id) throw new Error('Unauthorized or Dojo not found');
 
-  const { data, error } = await supabase.rpc('get_members_v2', {
+  const { data, error } = await supabase.rpc('get_members_v3', {
     p_dojo_id: profile.dojo_id,
-    p_search: search,
-    p_page: page,
-    p_page_size: pageSize
+    p_page: page ?? 0,
+    p_page_size: pageSize ?? 20,
+    p_search: search ?? ''
   });
 
   if (error) throw error;

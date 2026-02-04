@@ -796,7 +796,7 @@ export type Database = {
           unpaid_count: number
         }[]
       }
-      get_members_v2: {
+      get_members_v3: {
         Args: {
           p_dojo_id: string
           p_page?: number
