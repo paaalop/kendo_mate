@@ -3,9 +3,12 @@ import { getUserId } from "@/lib/utils/auth";
 import { UserProfileForm } from "@/components/settings/user-profile-form";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export default async function ProfileSettingsPage() {
   const userId = await getUserId();
+  if (!userId) redirect("/login");
+
   const supabase = await createClient();
 
   const { data: profile } = await supabase

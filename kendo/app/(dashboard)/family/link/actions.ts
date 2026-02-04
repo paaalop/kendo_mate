@@ -35,7 +35,7 @@ export async function findMyChildren(dojoId?: string) {
   const { data: children, error } = await supabase
     .rpc('search_profiles_by_phone', { 
       search_phone: sanitizedPhone,
-      target_dojo_id: dojoId || null,
+      target_dojo_id: dojoId || undefined,
       requester_uuid: user.id
     })
 

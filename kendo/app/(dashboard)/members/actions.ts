@@ -70,7 +70,7 @@ export async function getMembers(params: {
   const supabase = await createClient();
   const profile = await getActiveStaffProfile();
 
-  if (!profile) throw new Error('Unauthorized');
+  if (!profile || !profile.dojo_id) throw new Error('Unauthorized or Dojo not found');
 
   const { data, error } = await supabase.rpc('get_members_v2', {
     p_dojo_id: profile.dojo_id,

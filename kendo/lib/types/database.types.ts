@@ -294,6 +294,7 @@ export type Database = {
           author_id?: string | null
           content?: string
           created_at?: string
+          dojo_id?: string
           id?: string
           is_pinned?: boolean | null
           title?: string
@@ -446,6 +447,7 @@ export type Database = {
           category?: Database["public"]["Enums"]["post_category"]
           content?: string
           created_at?: string
+          dojo_id?: string
           id?: string
           image_url?: string | null
           title?: string
@@ -794,6 +796,34 @@ export type Database = {
           unpaid_count: number
         }[]
       }
+      get_members_v2: {
+        Args: {
+          p_dojo_id: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+        }
+        Returns: {
+          birthdate: string
+          created_at: string
+          default_session_time: string
+          deleted_at: string
+          dojo_id: string
+          guardian_name: string
+          guardian_phone: string
+          id: string
+          is_adult: boolean
+          is_shadow: boolean
+          name: string
+          owner_id: string
+          phone: string
+          rank_level: number
+          rank_name: string
+          role: string
+          total_count: number
+          user_id: string
+        }[]
+      }
       get_next_curriculum: {
         Args: { member_uuid: string }
         Returns: {
@@ -803,6 +833,10 @@ export type Database = {
           required_rank_level: number
           title: string
         }[]
+      }
+      increment_post_view_count: {
+        Args: { post_id_param: string }
+        Returns: undefined
       }
       is_dojo_admin_for_profile: {
         Args: { target_profile_id: string }
@@ -823,6 +857,33 @@ export type Database = {
         Args: { new_index: number; target_item_id: string }
         Returns: undefined
       }
+      search_profiles_by_phone:
+        | {
+            Args: { search_phone: string; target_dojo_id?: string }
+            Returns: {
+              birthdate: string
+              dojo_id: string
+              dojo_name: string
+              guardian_phone: string
+              id: string
+              name: string
+            }[]
+          }
+        | {
+            Args: {
+              requester_uuid?: string
+              search_phone: string
+              target_dojo_id?: string
+            }
+            Returns: {
+              birthdate: string
+              dojo_id: string
+              dojo_name: string
+              guardian_phone: string
+              id: string
+              name: string
+            }[]
+          }
       update_member_role: {
         Args: { new_role: string; target_member_id: string }
         Returns: undefined
@@ -1114,7 +1175,7 @@ export type Database = {
           id: string
           in_progress_size?: number
           key: string
-          owner_id: string | null
+          owner_id?: string | null
           upload_signature: string
           user_metadata?: Json | null
           version: string
