@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Heart, MessageSquare, ImageIcon, MoreVertical, AlertTriangle, Trash2 } from 'lucide-react';
+import { Heart, MessageSquare, ImageIcon, MoreVertical, AlertTriangle, Trash2, Eye } from 'lucide-react';
 import { PostWithAuthor } from '@/lib/types/community';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -109,34 +109,34 @@ export function PostCard({ post, currentUserId, isOwnerOrInstructor }: PostCardP
   return (
     <>
       <Link href={`/community/${post.id}`} className="block group">
-        <div className="p-4 border rounded-lg bg-white shadow-sm hover:border-gray-300 transition-colors relative">
+        <div className="p-5 border border-gray-100 rounded-xl bg-white shadow-sm hover:shadow-md hover:border-blue-100 transition-all relative overflow-hidden">
           
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-3">
             <div className="flex items-center gap-2">
-              <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                post.category === 'FREE' ? 'bg-gray-100 text-gray-700' : 
-                post.category === 'QUESTION' ? 'bg-orange-100 text-orange-700' : 
-                'bg-green-100 text-green-700'
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                post.category === 'FREE' ? 'bg-gray-100 text-gray-600' : 
+                post.category === 'QUESTION' ? 'bg-orange-100 text-orange-600' : 
+                'bg-green-100 text-green-600'
               }`}>
                 {post.category === 'FREE' ? '자유' : post.category === 'QUESTION' ? '질문' : '운동'}
               </span>
-              <h3 className="font-semibold text-lg leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">{post.title}</h3>
-              {post.image_url && <ImageIcon className="w-4 h-4 text-gray-400" />}
+              <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">{post.title}</h3>
+              {post.image_url && <ImageIcon className="w-3.5 h-3.5 text-gray-300" />}
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-400 whitespace-nowrap">
+              <span className="text-[11px] text-gray-400 whitespace-nowrap">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: ko })}
               </span>
               
               <div onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-1 hover:bg-gray-100 rounded-full">
-                      <MoreVertical className="w-4 h-4 text-gray-400" />
+                    <button className="p-1.5 hover:bg-gray-50 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+                      <MoreVertical className="w-4 h-4" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-32">
                     {canDelete && (
                       <DropdownMenuItem onClick={handleDelete} className="text-red-600 focus:text-red-600">
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -155,33 +155,40 @@ export function PostCard({ post, currentUserId, isOwnerOrInstructor }: PostCardP
             </div>
           </div>
           
-          <div className="flex gap-4">
+          <div className="flex gap-4 mb-4">
              <div className="flex-1">
-                <p className="text-sm text-gray-600 line-clamp-2 mb-3 min-h-[1.25rem] whitespace-pre-wrap">{post.content}</p>
+                <p className="text-sm text-gray-600 line-clamp-2 min-h-[2.5rem] whitespace-pre-wrap leading-relaxed">{post.content}</p>
              </div>
              {post.image_url && (
-                <div className="flex-shrink-0 w-16 h-16 relative rounded-md overflow-hidden bg-gray-100 border">
-                   <Image src={post.image_url} alt="Thumbnail" fill className="object-cover" sizes="64px" unoptimized />
+                <div className="flex-shrink-0 w-20 h-20 relative rounded-lg overflow-hidden bg-gray-50 border border-gray-100">
+                   <Image src={post.image_url} alt="Thumbnail" fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="80px" unoptimized />
                 </div>
              )}
           </div>
           
-          <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+          <div className="flex justify-between items-center text-[12px] text-gray-400 pt-3 border-t border-gray-50">
             <div className="flex items-center gap-4">
-              <span>{post.author?.name || '익명'}</span>
-              <button 
-                onClick={handleLike}
-                className={`flex items-center gap-1 hover:text-red-500 transition-colors p-1 -ml-1 ${isLiked ? 'text-red-500' : ''}`}
-              >
-                <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                <span>{likesCount}</span>
-              </button>
-              <div className="flex items-center gap-1">
-                <MessageSquare className="w-4 h-4" />
-                <span>{post.comments_count}</span>
+              <span className="font-medium text-gray-600">{post.author?.name || '익명'}</span>
+              
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={handleLike}
+                  className={`flex items-center gap-1 hover:text-red-500 transition-colors ${isLiked ? 'text-red-500 font-medium' : ''}`}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-current' : ''}`} />
+                  <span>{likesCount}</span>
+                </button>
+                <div className="flex items-center gap-1">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>{post.comments_count}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{post.view_count || 0}</span>
+                </div>
               </div>
             </div>
-            {isEdited && <span>(수정됨)</span>}
+            {isEdited && <span className="text-[10px] bg-gray-50 px-1.5 py-0.5 rounded italic">(수정됨)</span>}
           </div>
         </div>
       </Link>

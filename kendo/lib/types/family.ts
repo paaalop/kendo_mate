@@ -37,8 +37,3 @@ export interface ShadowProfile extends Profile {
   owner_id: string | null;
   birthdate: string | null;
 }
-
-export interface CreateShadowProfileParams {
-  name: string;
-  birthdate: string;
-}

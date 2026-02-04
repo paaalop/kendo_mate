@@ -166,6 +166,7 @@ export function MemberDetailView({
             <h3 className="text-lg font-bold text-gray-900 border-b pb-2">기본 정보</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InfoItem label="이름" value={member.name} />
+              <InfoItem label="생년월일" value={member.birthdate ? String(member.birthdate) : "미지정"} />
               <InfoItem label="전화번호" value={member.phone} />
               <InfoItem label="성인 여부" value={member.is_adult ? "성인" : "미성년자"} />
               <InfoItem label="기본 수련 시간" value={member.default_session_time || "미지정"} />

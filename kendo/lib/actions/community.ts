@@ -6,25 +6,26 @@ import { createNoticeSchema, createPostSchema, createCommentSchema } from '@/lib
 import { z } from 'zod';
 import { NoticeWithAuthor } from '@/lib/types/community';
 import { getUserId } from '@/lib/utils/auth';
+import { getActiveProfileContext } from '@/lib/utils/profile';
 
 async function getUserProfile() {
-  const supabase = await createClient();
-  const userId = await getUserId();
-  if (!userId) throw new Error("Unauthorized");
+  const context = await getActiveProfileContext();
+  if (!context) throw new Error("Unauthorized");
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
+  const { user, allProfiles, activeProfileId } = context;
+  const activeProfile = allProfiles.find(p => p.id === activeProfileId);
 
-  if (!profile) throw new Error("Profile not found");
-  if (!profile.dojo_id) throw new Error("Dojo ID is required");
-  if (!profile.role) throw new Error("Role is required");
+  if (!activeProfile) throw new Error("Profile not found");
+  
+  // Use active profile's dojo_id, or fallback to any linked dojo if active one is null (for guardians)
+  const dojoId = activeProfile.dojo_id || allProfiles.find(p => p.dojo_id)?.dojo_id;
+  
+  if (!dojoId) throw new Error("Dojo ID is required");
+  if (!activeProfile.role) throw new Error("Role is required");
 
   return { 
-    userId, 
-    profile: profile as Omit<typeof profile, 'dojo_id' | 'role'> & { dojo_id: string; role: string } 
+    userId: user.id, 
+    profile: { ...activeProfile, dojo_id: dojoId } as any
   };
 }
 
@@ -432,6 +433,30 @@ export async function toggleLike(type: 'post' | 'comment', id: string) {
   } catch (error) {
     console.error('Error toggling like:', error);
     return { success: false, error: '좋아요 처리 중 오류가 발생했습니다.' };
+  }
+}
+
+export async function incrementViewCount(postId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Increment view_count using RPC or just update if we don't care about race conditions as much
+    // Using a simple update for now, but in production RPC is better: 
+    // update posts set view_count = view_count + 1 where id = postId
+    const { error } = await supabase.rpc('increment_post_view_count', { post_id_param: postId });
+    
+    // Fallback if RPC doesn't exist yet
+    if (error) {
+       const { data: post } = await supabase.from('posts').select('view_count').eq('id', postId).single();
+       if (post) {
+          await supabase.from('posts').update({ view_count: (post.view_count || 0) + 1 }).eq('id', postId);
+       }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+    return { success: false };
   }
 }
 

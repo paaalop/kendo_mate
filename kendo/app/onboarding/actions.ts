@@ -155,7 +155,7 @@ export async function submitSignupRequest(dojoId: string, formData: z.infer<type
       return { error: "입력값이 올바르지 않습니다." };
     }
 
-    const { name, phone: rawPhone, isAdult, guardianPhone: rawGuardianPhone } = validatedFields.data;
+    const { name, birthdate, phone: rawPhone, isAdult, guardianPhone: rawGuardianPhone } = validatedFields.data;
     const phone = sanitizePhoneNumber(rawPhone);
     const guardianPhone = rawGuardianPhone ? sanitizePhoneNumber(rawGuardianPhone) : null;
 
@@ -193,6 +193,7 @@ export async function submitSignupRequest(dojoId: string, formData: z.infer<type
         dojo_id: dojoId,
         user_id: userId,
         name,
+        birthdate,
         phone,
         is_adult: isAdult,
         guardian_phone: guardianPhone,

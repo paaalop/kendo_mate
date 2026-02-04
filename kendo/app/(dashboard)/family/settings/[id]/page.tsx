@@ -1,6 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import { UnlinkButton } from '@/components/dashboard/unlink-button'
 import { ChevronLeft, Building2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -60,17 +59,12 @@ export default async function ProfileSettingsPage({ params }: ProfileSettingsPag
                 <span className="font-bold text-blue-900">{dojoName}</span>
               </div>
               
-              <UnlinkButton 
-                profileId={profile.id} 
-                profileName={profile.name} 
-                dojoName={dojoName || ''} 
-              />
             </div>
           ) : (
             <div className="text-center py-4">
               <p className="text-sm text-gray-500 mb-4">현재 연결된 도장이 없습니다.</p>
               <Link 
-                href={`/family/link/${profile.id}`}
+                href="/family/link"
                 className="inline-flex items-center justify-center w-full px-4 py-3 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition min-h-[44px]"
               >
                 도장 연결하러 가기

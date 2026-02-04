@@ -63,6 +63,20 @@ export function JoinDojoForm({ dojoId }: { dojoId: string }) {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
+          생년월일
+        </label>
+        <input
+          {...register("birthdate")}
+          type="date"
+          className="w-full px-3 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        {errors.birthdate && (
+          <p className="mt-1 text-xs text-red-500">{errors.birthdate.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           연락처
         </label>
         <input

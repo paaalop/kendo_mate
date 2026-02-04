@@ -1,0 +1,1 @@
+alter table "public"."posts" add column "view_count" integer default 0;

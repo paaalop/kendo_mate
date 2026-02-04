@@ -24,19 +24,21 @@ interface FamilySwitcherProps {
   profiles: Profile[]
   activeProfileId: string
   isGuardian: boolean
+  isAdult: boolean
 }
 
-export function FamilySwitcher({ profiles, activeProfileId, isGuardian }: FamilySwitcherProps) {
+export function FamilySwitcher({ profiles, activeProfileId, isGuardian, isAdult }: FamilySwitcherProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const currentProfile = activeProfileId === 'guardian_summary' 
-    ? { name: '보호자 요약', id: 'guardian_summary' }
-    : profiles.find(p => p.id === activeProfileId)
+  // Only show link option if adult or guardian summary is active
+  const canLinkChild = isAdult || isGuardian;
+
+  const currentProfile = profiles.find(p => p.id === activeProfileId)
 
   const handleSwitch = (id: string) => {
     startTransition(async () => {
-      await setActiveProfile(id === 'guardian_summary' ? 'guardian' : id)
+      await setActiveProfile(id)
       setIsOpen(false)
       // Redirect to home to ensure proper layout/permissions are loaded
       window.location.href = '/'
@@ -50,21 +52,14 @@ export function FamilySwitcher({ profiles, activeProfileId, isGuardian }: Family
         disabled={isPending}
         className="flex items-center space-x-2 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition min-h-[44px]"
       >
-        <div className={cn(
-          "w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors",
-          activeProfileId !== 'guardian_summary' ? "bg-blue-600 border-blue-400" : "bg-blue-100 border-transparent"
-        )}>
-          {activeProfileId === 'guardian_summary' ? (
-            <ShieldCheck className="w-4 h-4 text-blue-600" />
-          ) : (
-            <User className={cn("w-4 h-4", activeProfileId !== 'guardian_summary' ? "text-white" : "text-blue-600")} />
-          )}
+        <div className="w-6 h-6 rounded-full flex items-center justify-center border-2 transition-colors bg-blue-600 border-blue-400">
+          <User className="w-4 h-4 text-white" />
         </div>
         <div className="text-left">
           <p className="text-xs font-bold text-gray-900 leading-none">
             {currentProfile?.name || '프로필 선택'}
           </p>
-          {activeProfileId !== 'guardian_summary' && currentProfile && (
+          {currentProfile && (
             <p className="text-[10px] text-gray-500 mt-0.5">
               {(currentProfile as Profile).dojos?.name || '소속 없음'}
             </p>
@@ -81,23 +76,6 @@ export function FamilySwitcher({ profiles, activeProfileId, isGuardian }: Family
           />
           <div className="absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="p-2 space-y-1">
-              {isGuardian && (
-                <button
-                  onClick={() => handleSwitch('guardian_summary')}
-                  className={cn(
-                    "w-full flex items-center justify-between p-3 rounded-xl transition text-left",
-                    activeProfileId === 'guardian_summary' ? "bg-blue-50 text-blue-600" : "hover:bg-gray-50 text-gray-700"
-                  )}
-                >
-                  <div className="flex items-center">
-                    <ShieldCheck className="w-4 h-4 mr-3" />
-                    <span className="text-sm font-bold">보호자 요약</span>
-                  </div>
-                  {activeProfileId === 'guardian_summary' && <Check className="w-4 h-4" />}
-                </button>
-              )}
-
-              <div className="h-px bg-gray-100 my-1" />
               <p className="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">프로필 목록</p>
 
               {profiles.map((profile) => (
@@ -122,15 +100,19 @@ export function FamilySwitcher({ profiles, activeProfileId, isGuardian }: Family
                 </button>
               ))}
 
-              <div className="h-px bg-gray-100 my-1" />
-              <Link
-                href="/family/create"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center p-3 text-gray-600 hover:bg-gray-50 rounded-xl transition"
-              >
-                <PlusCircle className="w-4 h-4 mr-3" />
-                <span className="text-sm">새 프로필 만들기</span>
-              </Link>
+              {canLinkChild && (
+                <>
+                  <div className="h-px bg-gray-100 my-1" />
+                  <Link
+                    href="/family/link"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center p-3 text-gray-600 hover:bg-gray-50 rounded-xl transition"
+                  >
+                    <PlusCircle className="w-4 h-4 mr-3" />
+                    <span className="text-sm">자녀 연결하기</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </>

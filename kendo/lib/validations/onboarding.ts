@@ -45,6 +45,7 @@ export const createDojoSchema = z.object({
  */
 export const joinDojoSchema = z.object({
   name: z.string().min(2, "이름은 2자 이상이어야 합니다."),
+  birthdate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "올바른 생년월일 형식이 아닙니다 (YYYY-MM-DD)."),
   phone: z.string().regex(/^010\d{8}$/, "올바른 휴대폰 번호 형식이 아닙니다 (010XXXXXXXX)."),
   isAdult: z.boolean(),
   guardianPhone: z.string().optional(),

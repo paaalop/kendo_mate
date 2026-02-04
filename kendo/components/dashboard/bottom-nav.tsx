@@ -29,9 +29,6 @@ export function BottomNav({ isStaff, isOwner }: BottomNavProps) {
       { href: '/payments', label: '회비', icon: CreditCard },
       { href: '/settings', label: '설정', icon: Settings },
     ] : []),
-    ...(!isStaff && !isOwner ? [
-      { href: '/payments', label: '회비', icon: CreditCard },
-    ] : [])
   ].slice(0, 5) // Limit to 5 items
 
   return (

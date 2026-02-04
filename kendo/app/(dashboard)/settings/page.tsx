@@ -1,9 +1,7 @@
 import { checkOwnerRole } from "@/lib/utils/auth";
 import { createClient } from "@/utils/supabase/server";
 import { getSessionList, getCurriculumList } from "./actions";
-import { DojoProfileForm } from "@/components/settings/dojo-profile-form";
-import { SessionManager } from "@/components/settings/session-manager";
-import { CurriculumList } from "@/components/settings/curriculum-list";
+import { SettingsTabs } from "@/components/settings/settings-tabs";
 
 export default async function SettingsPage() {
   await checkOwnerRole();
@@ -21,12 +19,17 @@ export default async function SettingsPage() {
   const curriculumItems = await getCurriculumList();
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto pb-20">
-      <h1 className="text-2xl font-bold mb-6">도장 설정</h1>
+    <div className="max-w-4xl mx-auto py-8 px-4 pb-24">
+      <header className="mb-8">
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">도장 관리 설정</h1>
+        <p className="text-gray-500 mt-2">도장 정보, 수련 시간표 및 커리큘럼을 관리합니다.</p>
+      </header>
       
-      <DojoProfileForm initialName={dojoName} />
-      <SessionManager initialSessions={sessions} />
-      <CurriculumList items={curriculumItems} />
+      <SettingsTabs 
+        initialDojoName={dojoName}
+        sessions={sessions}
+        curriculumItems={curriculumItems}
+      />
     </div>
   );
 }

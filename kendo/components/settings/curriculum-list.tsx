@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CurriculumItem } from "@/lib/types/admin";
 import { CurriculumItemCard } from "./curriculum-item";
 import { manageCurriculumItem, reorderCurriculumItem } from "@/app/(dashboard)/settings/actions";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, BookOpen } from "lucide-react";
 
 interface CurriculumListProps {
   items: CurriculumItem[];
@@ -63,54 +63,83 @@ export function CurriculumList({ items }: CurriculumListProps) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg border shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">커리큘럼 관리</h2>
-        <button onClick={handleCreate} className="flex items-center text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">
-            <Plus className="w-4 h-4 mr-1" /> 추가
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">커리큘럼 관리</h2>
+          <p className="text-sm text-gray-500 mt-1">심사 항목 및 수련 커리큘럼을 관리합니다.</p>
+        </div>
+        <button 
+          onClick={handleCreate} 
+          className="flex items-center gap-2 text-sm font-semibold bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors"
+        >
+            <Plus className="w-4 h-4" /> 추가하기
         </button>
       </div>
 
-      <div className="space-y-2">
-        {items.map(item => (
-          <CurriculumItemCard 
-            key={item.id} 
-            item={item} 
-            totalCount={items.length} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete}
-            onReorder={handleReorder}
-          />
-        ))}
-        {items.length === 0 && <p className="text-gray-400 text-center py-4">등록된 커리큘럼이 없습니다.</p>}
+      <div className="p-6">
+        <div className="grid gap-3">
+          {items.map(item => (
+            <CurriculumItemCard 
+              key={item.id} 
+              item={item} 
+              totalCount={items.length} 
+              onEdit={handleEdit} 
+              onDelete={handleDelete}
+              onReorder={handleReorder}
+            />
+          ))}
+          {items.length === 0 && (
+            <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl">
+              <BookOpen className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+              <p className="text-gray-400 font-medium">등록된 커리큘럼 항목이 없습니다.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {isModalOpen && editingItem && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-                <h3 className="text-lg font-bold mb-4">{editingItem.id ? '항목 수정' : '항목 추가'}</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium mb-1">제목</label>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md animate-in zoom-in-95 duration-200">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">{editingItem.id ? '항목 수정' : '새 항목 추가'}</h3>
+                  <p className="text-sm text-gray-500 mt-1">항목 제목과 설명을 입력해주세요.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">제목</label>
                         <input 
-                            className="w-full border p-2 rounded" 
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" 
+                            placeholder="예: 기본 머리치기, 연격 등"
                             value={editingItem.title} 
                             onChange={e => setEditingItem({...editingItem, title: e.target.value})}
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium mb-1">설명</label>
+                    <div className="space-y-2">
+                        <label className="text-sm font-semibold text-gray-700">설명 (선택)</label>
                         <textarea 
-                            className="w-full border p-2 rounded h-20" 
+                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all h-28 resize-none" 
+                            placeholder="항목에 대한 상세 설명을 입력하세요."
                             value={editingItem.description || ''} 
                             onChange={e => setEditingItem({...editingItem, description: e.target.value})}
                         />
                     </div>
-                    <div className="flex space-x-2 mt-6">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 bg-gray-100 rounded hover:bg-gray-200">취소</button>
-                        <button type="submit" disabled={loading} className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex justify-center items-center">
-                            {loading ? <Loader2 className="animate-spin w-4 h-4" /> : "저장"}
+                    <div className="flex gap-3 mt-8">
+                        <button 
+                          type="button" 
+                          onClick={() => setIsModalOpen(false)} 
+                          className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                        >
+                          취소
+                        </button>
+                        <button 
+                          type="submit" 
+                          disabled={loading} 
+                          className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all flex justify-center items-center"
+                        >
+                            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "저장하기"}
                         </button>
                     </div>
                 </form>

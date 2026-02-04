@@ -45,7 +45,7 @@ export async function proxy(request: NextRequest) {
     }
 
     if (user && isAuthPage) {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(new URL("/community", request.url));
     }
 
     // 5. [핵심 최적화] 인증된 사용자 정보를 헤더에 주입하여 서버 컴포넌트 전달

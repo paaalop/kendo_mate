@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { manageSession } from "@/app/(dashboard)/settings/actions";
-import { Loader2, Trash2, Plus, Edit2 } from "lucide-react";
+import { Loader2, Trash2, Plus, Edit2, Clock } from "lucide-react";
 import { Session } from "@/lib/types/admin";
 
 interface SessionManagerProps {
@@ -54,76 +54,118 @@ export function SessionManager({ initialSessions }: SessionManagerProps) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg border shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">수련 시간표</h2>
-            <button onClick={handleOpenCreate} className="flex items-center text-sm bg-gray-100 px-3 py-1 rounded hover:bg-gray-200">
-                <Plus className="w-4 h-4 mr-1" /> 추가
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">수련 시간표 관리</h2>
+              <p className="text-sm text-gray-500 mt-1">도장에서 운영하는 수련 타임 정보를 관리합니다.</p>
+            </div>
+            <button 
+              onClick={handleOpenCreate} 
+              className="flex items-center gap-2 text-sm font-semibold bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors"
+            >
+                <Plus className="w-4 h-4" /> 추가하기
             </button>
         </div>
 
-        <div className="space-y-2">
-            {initialSessions.map(session => (
-                <div key={session.id} className="flex items-center justify-between p-3 border rounded hover:bg-gray-50">
-                    <div>
-                        <div className="font-bold">{session.name}</div>
-                        <div className="text-gray-500 text-sm">
-                            {session.start_time.slice(0, 5)} - {session.end_time.slice(0, 5)}
+        <div className="p-6">
+          <div className="grid gap-3">
+              {initialSessions.map(session => (
+                  <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50/50 hover:bg-gray-50 border border-gray-100 rounded-2xl transition-all group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-blue-600 shadow-sm">
+                          <Clock className="w-6 h-6" />
                         </div>
-                    </div>
-                    <div className="flex space-x-2">
-                        <button onClick={() => handleOpenEdit(session)} className="p-2 text-gray-500 hover:text-blue-600">
-                            <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDelete(session.id)} className="p-2 text-gray-500 hover:text-red-600">
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </div>
+                        <div>
+                            <div className="font-bold text-gray-900">{session.name}</div>
+                            <div className="text-gray-500 text-sm flex items-center gap-1.5 mt-0.5">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                {session.start_time.slice(0, 5)} - {session.end_time.slice(0, 5)}
+                            </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => handleOpenEdit(session)} 
+                            className="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                            title="수정"
+                          >
+                              <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDelete(session.id)} 
+                            className="p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title="삭제"
+                          >
+                              <Trash2 className="w-4 h-4" />
+                          </button>
+                      </div>
+                  </div>
+              ))}
+              {initialSessions.length === 0 && (
+                <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-2xl">
+                  <Clock className="w-12 h-12 text-gray-200 mx-auto mb-3" />
+                  <p className="text-gray-400 font-medium">등록된 수련 시간이 없습니다.</p>
                 </div>
-            ))}
-            {initialSessions.length === 0 && <p className="text-gray-400 text-center py-4">등록된 세션이 없습니다.</p>}
+              )}
+          </div>
         </div>
 
         {isModalOpen && editingSession && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-lg p-6 w-full max-w-sm">
-                    <h3 className="text-lg font-bold mb-4">{editingSession.id ? '세션 수정' : '세션 추가'}</h3>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">이름</label>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md animate-in zoom-in-95 duration-200">
+                    <div className="mb-6">
+                      <h3 className="text-xl font-bold text-gray-900">{editingSession.id ? '수련 시간 수정' : '새 수련 시간 추가'}</h3>
+                      <p className="text-sm text-gray-500 mt-1">타임 이름과 운영 시간을 입력해주세요.</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold text-gray-700">타임 이름</label>
                             <input 
-                                className="w-full border p-2 rounded" 
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" 
+                                placeholder="예: 오후 1부, 성인부 등"
                                 value={editingSession.name} 
                                 onChange={e => setEditingSession({...editingSession, name: e.target.value})}
                                 required
                             />
                         </div>
-                        <div className="flex space-x-2">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium mb-1">시작</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700">시작 시간</label>
                                 <input 
                                     type="time" 
-                                    className="w-full border p-2 rounded" 
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" 
                                     value={editingSession.start_time?.slice(0,5)} 
                                     onChange={e => setEditingSession({...editingSession, start_time: e.target.value})}
                                     required
                                 />
                             </div>
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium mb-1">종료</label>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-gray-700">종료 시간</label>
                                 <input 
                                     type="time" 
-                                    className="w-full border p-2 rounded" 
+                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all" 
                                     value={editingSession.end_time?.slice(0,5)} 
                                     onChange={e => setEditingSession({...editingSession, end_time: e.target.value})}
                                     required
                                 />
                             </div>
                         </div>
-                        <div className="flex space-x-2 mt-6">
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2 bg-gray-100 rounded hover:bg-gray-200">취소</button>
-                            <button type="submit" disabled={loading} className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex justify-center items-center">
-                                {loading ? <Loader2 className="animate-spin w-4 h-4" /> : "저장"}
+                        <div className="flex gap-3 mt-8">
+                            <button 
+                              type="button" 
+                              onClick={() => setIsModalOpen(false)} 
+                              className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                            >
+                              취소
+                            </button>
+                            <button 
+                              type="submit" 
+                              disabled={loading} 
+                              className="flex-1 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all flex justify-center items-center"
+                            >
+                                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "저장하기"}
                             </button>
                         </div>
                     </form>

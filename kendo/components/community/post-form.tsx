@@ -98,104 +98,113 @@ export function PostForm({ initialData }: PostFormProps) {
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
-      <div className="space-y-2">
-        <label className="text-sm font-medium block">카테고리</label>
-        <div className="flex gap-2">
-          {['FREE', 'QUESTION', 'EXERCISE'].map((cat) => (
-            <label key={cat} className={`
-              px-4 py-2 rounded-full text-sm font-medium cursor-pointer border transition-colors
-              ${form.watch('category') === cat 
-                ? 'bg-black text-white border-black' 
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}
-            `}>
-              <input 
-                type="radio" 
-                value={cat} 
-                {...form.register('category')} 
-                className="hidden"
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+        <div className="space-y-3">
+          <label className="text-sm font-bold text-gray-700 block ml-1">카테고리</label>
+          <div className="flex flex-wrap gap-2">
+            {['FREE', 'QUESTION', 'EXERCISE'].map((cat) => (
+              <label key={cat} className={`
+                px-5 py-2 rounded-full text-sm font-bold cursor-pointer border transition-all
+                ${form.watch('category') === cat 
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100' 
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:bg-gray-50'}
+              `}>
+                <input 
+                  type="radio" 
+                  value={cat} 
+                  {...form.register('category')} 
+                  className="hidden"
+                />
+                {cat === 'FREE' ? '자유' : cat === 'QUESTION' ? '질문' : '운동'}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-gray-700 block ml-1">제목</label>
+          <input 
+            {...form.register('title')} 
+            placeholder="제목을 입력하세요" 
+            className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all text-sm"
+          />
+          {form.formState.errors.title && (
+            <p className="text-xs text-red-500 ml-1">{form.formState.errors.title.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-gray-700 block ml-1">내용</label>
+          <textarea 
+            {...form.register('content')} 
+            placeholder="내용을 입력하세요" 
+            className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all text-sm min-h-[300px] resize-none"
+          />
+          {form.formState.errors.content && (
+            <p className="text-xs text-red-500 ml-1">{form.formState.errors.content.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-sm font-bold text-gray-700 block ml-1">이미지</label>
+          {previewUrl ? (
+            <div className="relative w-full aspect-video bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 group">
+              <Image 
+                src={previewUrl} 
+                alt="Preview" 
+                fill 
+                className="object-contain"
+                unoptimized
               />
-              {cat === 'FREE' ? '자유' : cat === 'QUESTION' ? '질문' : '운동'}
+              <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                 <button
+                    type="button"
+                    onClick={removeImage}
+                    className="p-3 bg-white/90 text-red-500 rounded-full hover:bg-white shadow-lg transition-transform hover:scale-110"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+              </div>
+            </div>
+          ) : (
+            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-200 rounded-2xl cursor-pointer hover:bg-gray-50 hover:border-blue-200 transition-all group">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                <div className="p-3 bg-gray-50 rounded-full mb-3 group-hover:bg-blue-50 transition-colors">
+                  <ImageIcon className="w-6 h-6 text-gray-400 group-hover:text-blue-500" />
+                </div>
+                <p className="text-sm font-medium text-gray-500 group-hover:text-gray-600">클릭하여 이미지 업로드</p>
+                <p className="text-[11px] text-gray-400 mt-1">최대 5MB, JPG/PNG/WebP</p>
+              </div>
+              <input 
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleFileChange}
+              />
             </label>
-          ))}
+          )}
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium block">제목</label>
-        <input 
-          {...form.register('title')} 
-          placeholder="제목을 입력하세요" 
-          className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black"
-        />
-        {form.formState.errors.title && (
-          <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium block">내용</label>
-        <textarea 
-          {...form.register('content')} 
-          placeholder="내용을 입력하세요" 
-          className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black min-h-[200px]"
-        />
-        {form.formState.errors.content && (
-          <p className="text-sm text-red-500">{form.formState.errors.content.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-sm font-medium block">이미지 첨부</label>
-        {previewUrl ? (
-          <div className="relative w-full h-64 bg-gray-100 rounded-md overflow-hidden border">
-            <Image 
-              src={previewUrl} 
-              alt="Preview" 
-              fill 
-              className="object-cover"
-            />
-            <button
-              type="button"
-              onClick={removeImage}
-              className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-              <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-500">클릭하여 이미지 업로드 (최대 5MB)</p>
-            </div>
-            <input 
-              type="file" 
-              accept="image/*" 
-              className="hidden" 
-              onChange={handleFileChange}
-            />
-          </label>
-        )}
-      </div>
-
-      <div className="flex justify-end gap-2 pt-4">
+      <div className="flex justify-end gap-3 pt-2">
         <button 
           type="button" 
           onClick={() => router.back()}
-          className="px-4 py-2 border rounded-md text-sm font-medium hover:bg-gray-100"
+          className="px-6 py-3 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors"
         >
           취소
         </button>
         <button 
           type="submit" 
           disabled={isSubmitting}
-          className="px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2"
+          className="px-8 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-all shadow-sm hover:shadow-blue-100"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          {initialData ? '수정' : '등록'}
+          {initialData ? '수정하기' : '등록하기'}
         </button>
       </div>
     </form>
   );
 }
+

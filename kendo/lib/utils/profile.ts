@@ -20,27 +20,48 @@ export const getActiveProfileContext = cache(async () => {
 
   if (!user) return null;
 
-  // 병렬로 프로필과 쿠키 확인 (쿠키는 이미 가져왔으므로 순차적이어도 무방하나 프로필 쿼리는 필수)
-  const [{ data: allProfiles }, cookieStore] = await Promise.all([
+  // Fetch profiles: 1. Owned by user, 2. Linked via profile_guardians
+  const [{ data: ownedProfiles }, { data: linkedProfilesData }, cookieStore] = await Promise.all([
     supabase
       .from("profiles")
       .select("*, dojos(name)")
-      .or(`user_id.eq.${user.id},owner_id.eq.${user.id}`)
+      .eq("user_id", user.id)
       .is("deleted_at", null),
+    supabase
+      .from("profile_guardians")
+      .select("profile_id")
+      .eq("guardian_id", user.id),
     cookies()
   ]);
 
+  let allProfiles = ownedProfiles || [];
+
+  if (linkedProfilesData && linkedProfilesData.length > 0) {
+    const linkedIds = linkedProfilesData.map(lp => lp.profile_id);
+    const { data: linkedProfiles } = await supabase
+      .from("profiles")
+      .select("*, dojos(name)")
+      .in("id", linkedIds)
+      .is("deleted_at", null);
+    
+    if (linkedProfiles) {
+      // Avoid duplicates
+      const ownedIds = new Set(allProfiles.map(p => p.id));
+      const uniqueLinked = linkedProfiles.filter(p => !ownedIds.has(p.id));
+      allProfiles = [...allProfiles, ...uniqueLinked];
+    }
+  }
+
   const userProfile = allProfiles?.find(p => p.user_id === user.id);
-  const isGuardian = userProfile?.role === 'guardian' || (allProfiles?.some(p => p.owner_id === user.id && p.user_id !== user.id) ?? false);
+  const hasLinkedProfiles = (linkedProfilesData && linkedProfilesData.length > 0) || (allProfiles?.some(p => p.owner_id === user.id && p.user_id !== user.id) ?? false);
+  const isGuardian = userProfile?.role === 'guardian' || hasLinkedProfiles;
 
   let activeProfileId = cookieStore.get('active_profile_id')?.value;
 
   if (!activeProfileId) {
-    const ownerProfile = allProfiles?.find(p => p.owner_id === null);
+    const ownerProfile = allProfiles?.find(p => p.user_id === user.id); // Default to the user's primary profile
     if (ownerProfile) {
       activeProfileId = ownerProfile.id;
-    } else if (isGuardian) {
-      activeProfileId = 'guardian_summary';
     } else if (allProfiles && allProfiles.length > 0) {
       activeProfileId = allProfiles[0].id;
     }

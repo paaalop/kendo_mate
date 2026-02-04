@@ -58,30 +58,37 @@ export function CommentForm({ postId, parentId, onSuccess, onAddOptimistic, plac
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-3">
       <div className="flex-1">
         <textarea
           {...form.register('content')}
           placeholder={placeholder}
-          className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-black min-h-[40px] resize-none"
+          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:bg-white focus:border-blue-200 transition-all min-h-[44px] max-h-32 resize-none leading-relaxed"
+          rows={1}
           onKeyDown={(e) => {
              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 form.handleSubmit(onSubmit)();
              }
           }}
+          onInput={(e) => {
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = `${Math.min(target.scrollHeight, 128)}px`;
+          }}
         />
         {form.formState.errors.content && (
-          <p className="text-xs text-red-500 mt-1">{form.formState.errors.content.message}</p>
+          <p className="text-[11px] text-red-500 mt-1 ml-1 font-medium">{form.formState.errors.content.message}</p>
         )}
       </div>
       <button 
         type="submit" 
         disabled={isSubmitting || !form.watch('content').trim()}
-        className="p-2 bg-black text-white rounded-md hover:bg-gray-800 disabled:opacity-50"
+        className="mt-0.5 p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 transition-all shadow-sm shadow-blue-50"
       >
         {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
       </button>
     </form>
   );
 }
+

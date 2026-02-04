@@ -59,21 +59,47 @@ export function MemberList({ initialMembers, initialHasMore, searchQuery, isOwne
     fetchMore();
   }, [page, searchQuery]);
 
+  const leaders = members.filter(m => m.role === 'owner' || m.role === 'instructor');
+  const regularMembers = members.filter(m => m.role !== 'owner' && m.role !== 'instructor');
+
+  // Server already sorts by role priority, rank_level, and name.
+  // We keep the groups but they will naturally follow the server's sort order within groups.
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {members.map((member, index) => {
-          if (members.length === index + 1) {
-            return (
-              <div ref={lastMemberElementRef} key={member.id}>
-                <MemberCard member={member} isOwner={isOwner} />
-              </div>
-            );
-          } else {
-            return <MemberCard key={member.id} member={member} isOwner={isOwner} />;
-          }
-        })}
-      </div>
+    <div className="space-y-8">
+      {leaders.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+            지도진 <span className="w-1 h-1 rounded-full bg-gray-300" /> {leaders.length}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {leaders.map((leader) => (
+              <MemberCard key={leader.id} member={leader} isOwner={isOwner} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="space-y-4">
+        {leaders.length > 0 && (
+          <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+            일반 관원 <span className="w-1 h-1 rounded-full bg-gray-300" /> {regularMembers.length}
+          </h2>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {regularMembers.map((member, index) => {
+            if (regularMembers.length === index + 1) {
+              return (
+                <div ref={lastMemberElementRef} key={member.id}>
+                  <MemberCard member={member} isOwner={isOwner} />
+                </div>
+              );
+            } else {
+              return <MemberCard key={member.id} member={member} isOwner={isOwner} />;
+            }
+          })}
+        </div>
+      </section>
 
       {loading && (
         <div className="flex justify-center p-4">
